@@ -1,0 +1,76 @@
+## Decor: button4L.sys
+
+SetEnv HOME_DIR $[HOME]/.fvwm
+SetEnv CORE_DIR $[HOME]/.fvwm/core
+
+## Vertical/horizontal tiling
+# Function TileW, check file .fvwm/config
+
+## Icon location
+
+SetEnv Icons $[CORE_DIR]/6Decor/5BtmLine/icons/24x24 # 24px
+
+## Colorsets
+## (check $[CORE_DIR]/FVWM-Colorsets.def)
+
+#   86 - Inactive Windows 
+#   11 - Active Window
+#   47 - Active Windows Borders
+#   51 - Inactive Windows Borders
+Colorset 86 fg #000000, bg #88a0a9, hi, sh, Plain, NoShape
+Colorset 11 fg #ffffff, bg #18658d, hi #ffffff, sh #ffffff, Plain, NoShape
+Colorset 47 fg #ffffff, bg #1a6e99, hi #ffffff, sh #ffffff
+Colorset 51 fg #4b88a4, bg #4b88a4, hi #4b88a4, sh #4b88a4
+
+## Binding:
+
+# Window Button Locations [1 Title  10 8 6 4 2]
+Mouse 1 2 A Close
+Mouse 1 4 A Maximize
+Mouse 1 6 A Thumbnail # Iconify
+Mouse 1 8 A TileW # Tiling, check file .fvwm/config
+Mouse 1 10 A Tabber # Tabs, check file .fvwm/config
+Mouse 1 1 A Menu MenuWindowOps
+
+## Decor:
+
+AddToDecor 5BTMDecor
++ ButtonStyle All -- UseTitleStyle
++ BorderStyle Simple -- HiddenHandles !NoInset Raised
++ TitleStyle LeftJustified -- Flat
++ ButtonStyle All -- Flat
++ AddButtonStyle 1 \
+        ActiveUp   (Pixmap $[Icons]/options-active.png   -- flat) \
+        Inactive   (Pixmap $[Icons]/options-inactive.png   -- flat)
++ AddButtonStyle 2 \
+        ActiveUp   (Pixmap $[Icons]/close-active.png   -- flat) \
+        Inactive   (Pixmap $[Icons]/close-inactive.png   -- flat)
++ AddButtonStyle 4 \
+        ActiveUp   (Pixmap $[Icons]/maximize-active.png   -- flat) \
+        Inactive   (Pixmap $[Icons]/maximize-inactive.png   -- flat)
++ AddButtonStyle 6 \
+        ActiveUp   (Pixmap $[Icons]/iconify-active.png   -- flat) \
+        Inactive   (Pixmap $[Icons]/iconify-inactive.png   -- flat)
++ AddButtonStyle 8 \
+        ActiveUp   (Pixmap $[Icons]/tile-active.png   -- flat) \
+        Inactive   (Pixmap $[Icons]/tile-inactive.png   -- flat)
++ AddButtonStyle 10 \
+        ActiveUp   (Pixmap $[Icons]/tab-active.png   -- flat) \
+        Inactive   (Pixmap $[Icons]/tab-inactive.png   -- flat)
++ ButtonStyle All - Clear
++ TitleStyle Centered Height 26
+
+## Style setting
+
+#   1 - Inactive Windows
+#   2 - Active Window
+#   3 - Inactive Windows Borders
+#   4 - Active Windows Borders
+# Style (Example) Colorset 1, HilightColorset 2, \
+        BorderColorset 3, HilightBorderColorset 4
+
+Style * Colorset 86, HilightColorset 11, BorderColorset 47, \
+        HilightBorderColorset 47, BorderWidth 1, HandleWidth 7,  \
+        UseDecor 5BTMDecor
+
+Style * Font "xft:Sans:size=12:minspace=False:antialias=True"

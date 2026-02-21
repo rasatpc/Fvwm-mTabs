@@ -1,0 +1,102 @@
+## Functions: deskL.sys
+## Normally an icon represents a minimized application. If you want
+## to turn that around, and launch functions or modules by clicking
+## on icons. Here’s to do that using FvwmButtons.
+## https://www.fvwm.org/Wiki/Tips/IconsOnDesktop/
+## https://www.fvwm.org/Wiki/CookBook/IconifyExcept/
+
+SetEnv CORE_DIR $[HOME]/.fvwm/core
+SetEnv USER_DIR $[HOME]/.fvwm/user
+
+################
+# Iconify all except focused window.
+######
+
+## Iconify switch.
+InfoStoreAdd IconSwitch "ON"
+
+DestroyFunc AIconic
+AddToFunc AIconic
++ I Test (EnvMatch infostore.IconSwitch ON) IconOn
++ I TestRc (NoMatch) IconOff
+
+DestroyFunc IconOn
+AddToFunc IconOn
++ I All (CurrentPage, !Iconic, !Focused) Thumbnail
++ I InfoStoreAdd IconSwitch OFF
+
+DestroyFunc IconOff
+AddToFunc IconOff
++ I All (Iconic) Iconify off
++ I Current InfoStoreAdd WLIST $[w.id]
++ I WindowId $[infostore.WLIST] WarpToWindow 50 50
++ I Schedule 300 Next (CurrentDesk, AcceptsFocus) Focus
++ I InfoStoreAdd IconSwitch ON
+
+################
+# Full screen maximize.
+######
+
+DestroyFunc ToggleMaximize
+AddToFunc ToggleMaximize
++ I Current (Maximized) WindowStyle Title, Border
++ I Current (!Maximized) WindowStyle !Title, Borders
++ I UpdateStyles
++ I Current Maximize ewmhiwa
++ I Style (Resource ScreenDLaunch*) StaysOnTop, NeverFocus
+
+# OverView (check function FvwmExpose)
+# core/ExposeList/
+
+################
+# Vertical/horizontal tiling
+######
+
+# Function TileW, check file .fvwm/config
+
+################
+# FvwmTabs.
+######
+
+## Loading
+#Module FvwmTabs
+
+DestroyFunc Tabber
+AddToFunc Tabber
++ I NewTabber --geometry=270x70
+
+################
+## DESK ICONS
+########
+
+## Disclude the possibility of FvwmButtons being iconified.
+Style FvwmButtons !Iconifiable
+
+## Panel
+
+DestroyModuleConfig DeskTitleIcon: *
+*DeskTitleIcon: Geometry 464x32-728+10
+*DeskTitleIcon: Fore #ffffff
+*DeskTitleIcon: Back #2b4e5e
+*DeskTitleIcon: PressColorset 7
+*DeskTitleIcon: Frame 0
+*DeskTitleIcon: Rows 1
+*DeskTitleIcon: Pixmap none
+*DeskTitleIcon: Font "xft:Sans:size=12:antialias=True"
+  
+*DeskTitleIcon: (84x1, Title Iconify, Action AIconic)
+*DeskTitleIcon: (10x1, Colorset 15, Action (Mouse 1) Nop)
+*DeskTitleIcon: (84x1, Title Screen, Action ToggleMaximize)
+*DeskTitleIcon: (10x1, Colorset 15, Action (Mouse 1) Nop)
+*DeskTitleIcon: (88x1, Title OverView, Action FvwmExpose)
+*DeskTitleIcon: (10x1, Colorset 15, Action (Mouse 1) Nop)
+*DeskTitleIcon: (84x1, Title Tile, Action TileW)
+*DeskTitleIcon: (10x1, Colorset 15, Action (Mouse 1) Nop)
+*DeskTitleIcon: (84x1, Title Tabs, Action Tabber)
+
+# Module FvwmButtons DeskTitleIcon
+AddToFunc StartFunction I Module FvwmButtons DeskTitleIcon
+
+## Style Setting
+
+Style DeskTitleIcon !Borders, !Title, WindowListSkip, StaysOnTop, Sticky, NeverFocus

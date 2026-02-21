@@ -1,0 +1,129 @@
+## Copy and rename .fvwm/setup/userExtSAMPLE.sys to .fvwm/userExt.sys
+## This file is for you to make changes (tag and untag) and add your own.
+
+## Tag core config and replace $[CORE_DIR] with $[USER_DIR]
+## Example:
+##  # Read $[CORE_DIR]/4Menus/TMenu/tMenu.conf
+##  Read $[USER_DIR]/TMenu//tMenu.conf
+
+###########
+# 1. FUNCTIONS (launcher, thumbnail, window position, etc)
+###########
+
+Read $[CORE_DIR]/1Functions/deskPgNo.sys
+Read $[CORE_DIR]/1Functions/deskIcons.sys
+Read $[CORE_DIR]/1Functions/Thumbnails/thumbnail.sys
+# Read $[CORE_DIR]/1Functions/autoMoveW.sys
+
+## USER ($[USER_DIR])
+Read $[USER_DIR]/autoMoveW.sys
+
+###########
+# 2. STYLES (menu colors, etc)
+###########
+
+###########
+# 3. COLORSETS (color settings, etc.)
+###########
+
+Read $[CORE_DIR]/3Colorsets/kColorsets.sys
+
+###########
+# 4. MENUS  (menu style, list, etc.)
+###########
+
+# Read $[CORE_DIR]/4Menus/TMenu/tMenu.conf
+
+## USER ($[USER_DIR])
+Read $[USER_DIR]/TMenu/tMenu.conf
+
+###########
+# 5. BINDINGS  (window list, move/resize, etc.)
+###########
+
+Read $[CORE_DIR]/5Bindings/ExposeList/fvwmExposeList.sys
+Read $[CORE_DIR]/5Bindings/MoRzBinding.sys
+Read $[CORE_DIR]/5Bindings/tBinding.sys
+
+## USER ($[USER_DIR])
+
+###########
+# 6. DECOR  (window title bar, border, etc.)
+###########
+
+Read $[CORE_DIR]/6Decor/5BtmLine/button5L.sys
+# Read $[CORE_DIR]/6Decor/5BtmDecor/button5Dec.sys
+
+## USER ($[USER_DIR])
+
+###########
+# 7. MODULES (control-panel, desk-icon, pager, etc.)
+###########
+
+Read $[CORE_DIR]/7Modules/ControlMinPanel/controlMP.sys
+Read $[CORE_DIR]/7Modules/RightTaskBar/rightTbar.sys
+Read $[CORE_DIR]/7Modules/vPager.sys
+# Read $[USER_DIR]/7Modules/SimpleButton/simpleB.sys
+
+## USER ($[USER_DIR])
+Read $[USER_DIR]/SimpleButton/simpleB.sys
+
+###########################################
+## Change preloaded settings.
+###########################################
+
+##### EdgeScroll
+## This will move the view port between the pages when the mouse
+## moves to the edge of the screen.
+
+EdgeScroll 0 0
+EdgeResistance 450
+EdgeThickness 1
+Style * EdgeMoveDelay 500, EdgeMoveResistance 100
+
+##### EwmhBaseStruts
+## EwmhBaseStruts [left] [right] [top] [bottom]
+## Reserves space along the edge(s) of the Screen that will not
+## be covered when maximizing or placing windows.
+
+EwmhBaseStruts 90 170 70 70
+
+##### Mouse
+## Mouse click behaviour and window focus.
+
+Style * ClickToFocus, FPGrabFocus
+
+##### Window Placement
+## Style to center the window location.
+
+Style * TileCascadePlacement
+#Style * MinOverlapPlacement, GrabFocusOff, !UsePPosition
+
+##### Exit panel 
+## Center panel postion.
+
+Style ConfirmQuit !Title, PositionPlacement Center, WindowListSkip, Layer 6
+
+###########################################
+## OTHER changes and addon.
+###########################################
+
+##### Hide GeometryWindow (window position text, left top corner).
+GeometryWindow Hide
+
+##### Change Window title bar font.
+
+DefaultFont "xft:Noto:Sans:size=11"
+
+##### Add tabs on each desk at startup.
+## Check user/autoMoveW.sys
+
+#Schedule 500 Style FvwmTabs* NeverFocus
+
+DestroyFunc Tabs
+AddToFunc Tabs
++ I NewTabber --geometry=175x70
++ I NewTabber --geometry=175x70
+# + I NewTabber --geometry=175x70
+
+Schedule 1200 Tabs

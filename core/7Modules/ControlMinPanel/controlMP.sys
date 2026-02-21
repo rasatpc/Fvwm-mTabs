@@ -1,0 +1,66 @@
+## Modules: controlMP.sys
+
+SetEnv HOME_DIR $[HOME]/.fvwm
+SetEnv CORE_DIR $[HOME]/.fvwm/core
+
+## Help Drop Menu
+
+### IMPORTANT ###
+# Variable EDT adds the available text editor from .fvwm/config.
+
+DestroyMenu MenuStart
+AddToMenu MenuStart
++ "Info " $[infostore.EDT] $[HOME_DIR]/setup/help/info.txt
++ "Bindings " $[infostore.EDT] $[CORE_DIR]/5Bindings/tBinding.sys
+
++ "How To " Exec exec display -size 960x540 $[HOME]/.fvwm/setup/images/Fvwm-mTab-v0.9-help.png
+
+## Set small icons
+
+SetEnv smallIcons $[CORE_DIR]/7Modules/ControlMinPanel/icons
+
+## Panel
+
+DestroyModuleConfig ControlControlMP: *
+*ControlMP: Geometry 330x32-0+10
+*ControlMP: Fore #ffffff
+*ControlMP: Back #2b4e5e
+*ControlMP: PressColorset 4
+*ControlMP: Frame 0
+*ControlMP: Rows 1
+*ControlMP: Pixmap none
+*ControlMP: Font "xft:Sans:size=12:antialias=True"
+  
+*ControlMP: (1x1, Icon $[smallIcons]/search-wb.png, Action(Mouse 1) "Exec exec xfce4-appfinder" )
+*ControlMP: (1x1, Icon $[smallIcons]/resize-wb.png, Action Resize )
+*ControlMP: (1x1, Icon $[smallIcons]/move-wb.png, Action Move  )
+
+*ControlMP: (Title Help, Back #028383,  ActionOnPress, \
+Action(Mouse 1) Menu MenuStart Rectangle +$left+36 0 12m)
+
+*ControlMP: (1x1, Colorset 10, Icon $[smallIcons]/quit-w.png, \
+	Panel (down, steps 6, delay 0, indicator 38) ExitBar "Module FvwmButtons ExitBar", Frame 1)
+
+# Module FvwmButtons ControlMP
+AddToFunc StartFunction I Module FvwmButtons ControlMP
+
+## Style Setting
+
+Style ControlMP !Borders, !Title, WindowListSkip, StaysOnTop, Sticky, NeverFocus
+
+## Exit Button
+
+DestroyModuleConfig ExitBar: *
+*ExitBar: Fore White
+*ExitBar: Back #028383
+*ExitBar: Geometry 62x152+0+0
+*ExitBar: Rows 4
+*ExitBar: Frame 1
+## Logout, Suspend, Restart, and Shutdown
+*ExitBar: (1x1, Icon $[smallIcons]/logout.png, Action(Mouse 1) "Quit")
+*ExitBar: (1x1, Icon $[smallIcons]/suspend.png, Action(Mouse 1) "Exec sudo pm-suspend")
+*ExitBar: (1x1, Icon $[smallIcons]/restart.png, Action(Mouse 1) "Exec sudo reboot")
+*ExitBar: (1x1, Icon $[smallIcons]/quit.png, Action(Mouse 1) "Exec sudo halt")
+
+Style ExitBar NoTitle, NoHandles, Sticky, WindowListSkip, \
+	BorderWidth 0, CirculateSkip, StaysOnTop, NeverFocus

@@ -1,0 +1,361 @@
+##################################
+#  ____________________________
+# (   _____  Fvwm-mTabs   ______)
+#  ) (__  _  _  _    _
+# (   __)( \/ )( \/\/ )/\/\
+#  ) (    \  /  \    //    \
+# (___)    \/    \/\/(_/\/\_) 3
+#
+#
+#  This startup configuration follows same sequence as the default
+#  Fvwm config system.
+#  /usr/share/fvwm3/default-config/config
+#
+#  The system is organized as follows:
+# 
+#    1: Functions
+#    2: Styles
+#    3: Colorsets
+#    4: Menus
+#    5: Bindings
+#    6: Decor
+#    7: Modules
+#
+#  In Fvwm mTabs, some of the sections are located in separate folders
+#  making it easy to manage and add new functions, decor, and modules
+#  defined by the user.
+#
+#  To make changes and add new features without being overwritten by new
+#  updates, it includes two folders and system files:
+#
+#  .fvwm/core  + config: core configs and startup file.
+#  .fvwm/user  + userExt.sys: user configs and system file.
+#
+#################################
+
+SetEnv HOME_DIR $[HOME]/.fvwm
+SetEnv CORE_DIR $[HOME]/.fvwm/core
+SetEnv USER_DIR $[HOME]/.fvwm/user
+
+#####
+
+# InfoStoreAdd can be used to store variable data internal to fvwm.
+# The variable can then be used in the configuration as $[infostore.name].
+#
+# The following is used in various menus and also sets the terminal
+# that FvwmConsole uses. Change this to your terminal of choice.
+
+InfoStoreAdd terminal xterm
+
+# This is used for "Run Command" and the Meta+Space key-binding.
+# runcmd is the binary name and runcmdopt contains additional
+# command line options.
+
+InfoStoreAdd runcmd "dmenu_run"
+InfoStoreAdd runcmdopt "-nb '#2b4e5e'"
+
+# DesktopConfiguration sets how fvwm handles desktops:
+#
+# * global -- the default. This means all screens show the same desktops/pages.
+# * per-monitor -- every monitor has its own virtual desktop/pages.
+# * shared -- the virtual desktops are shared across all monitors and each
+#     monitor shows a single desktop at a time.
+
+DesktopConfiguration global
+
+###########
+# 1: Functions (custom functions for various tasks)
+#
+
+# Start Function
+#
+# The start function is run right after fvwm is done reading
+# the config file. This function run after each restart
+# so using Test (Init) or Test (Restart) can further control
+# actions that are run during the first time run (Init) or
+# actions that are run after a restart.
+
+DestroyFunc StartFunction
+AddToFunc   StartFunction
++ I Test (Init) InitBackground
++ I Module FvwmEvent EventNewDesk
++ I Module FvwmMFL
++ I ModulePath ${HOME}/.fvwm/modules:+
++ I Module FvwmTabs
+
+## Copy essential folders and files to assigned locations.
+
+Exec exec sh $[HOME_DIR]/setup/copySampleTo.sh
+
+## Load startup functions, wifi and system info.
+
+Read $[CORE_DIR]/1Functions/initMgr.sys
+
+## Check Fvwm version for RootTransparent and background image load (SetBG).
+
+Test (x fvwm3-root) InfoStoreAdd VER "fvwm3-root -r"
+Test (x fvwm-root) InfoStoreAdd VER "fvwm-root -r"
+Test (x feh) InfoStoreAdd VER "feh --bg-tile"
+
+## Function to set background when fvwm starts
+
+DestroyFunc InitBackground
+AddToFunc InitBackground
++ I Test (f $[FVWM_USERDIR]/.BGdefault) \
+    Exec exec $[infostore.VER] $[FVWM_USERDIR]/.BGdefault
++ I TestRc (NoMatch) Exec exec $[infostore.VER] \
+    $[FVWM_DATADIR]/default-config/images/background/bg1.png
+
+## Mouse Bindings Functions
+
+DestroyFunc RaiseMoveX
+AddToFunc RaiseMoveX
++ I Raise
++ M $0
++ D $1
+
+DestroyFunc RaiseMove
+AddToFunc RaiseMove
++ I Raise
++ M $0
+
+DestroyFunc MoveToCurrent
+AddToFunc MoveToCurrent
++ I ThisWindow MoveToPage
++ I ThisWindow MoveToDesk
+
+## Function: Change of background image (SetBG $0).
+#
+# SetBG is used with the background menu to set the background
+# image and configure it to be loaded the next time fvwm is run.
+# Note, fvwm-root can't use .jpeg or resize images. Use something
+# like display, feh, etc.
+
+DestroyFunc SetBG
+AddToFunc   SetBG
++ I Test (f $[FVWM_USERDIR]/images/background/$0) \
+    Exec exec $[infostore.VER] $[FVWM_USERDIR]/images/background/$0
++ I TestRc (Match) Exec exec ln -fs images/background/$0 \
+    $[FVWM_USERDIR]/.BGdefault
++ I TestRc (Match) Break
++ I Test (!f $[FVWM_DATADIR]/default-config/images/background/$0) Break
++ I Exec exec $[infostore.VER] $[FVWM_DATADIR]/default-config/images/background/$0
++ I Exec exec ln -fs $[FVWM_DATADIR]/default-config/images/background/$0 \
+    $[FVWM_USERDIR]/.BGdefault
+
+## Function: IconManClick
+#
+# This function is run from FvwmIconMan when the button is clicked.
+
+DestroyFunc IconManClick
+AddToFunc   IconManClick
++ I ThisWindow (Raised, !Shaded, !Iconic, CurrentPage, AnyScreen) Iconify
++ I TestRc (Match) Break
++ I ThisWindow WindowShade off
++ I ThisWindow Iconify off
++ I ThisWindow Raise
++ I ThisWindow (AcceptsFocus) FlipFocus
+
+## Function: ToggleTitle
+#
+# This function will toggle if fvwm shows the TitleBar.
+
+DestroyFunc ToggleTitle
+AddToFunc   ToggleTitle
++ I ThisWindow (HasTitle) WindowStyle !Title
++ I TestRc (NoMatch) WindowStyle Title
+
+## Remember focused window in current page.
+
+SetEnv FocusPage 0
+
+DestroyFunc SavePageFocus
+AddToFunc SavePageFocus
++ I All (CurrentPage) State $[FocusPage] False
++ I Current State $[FocusPage] True
+
+## Restore previous focused window in current page.
+
+DestroyFunc RestorePageFocus
+AddToFunc RestorePageFocus
++ I Current (CurrentPage) Break 1
++ I Next (CurrentPage, State $[FocusPage]) Focus
++ I None (CurrentPage, Focused) Prev (CurrentPage) Focus
+
+DestroyModuleConfig FvwmEvent-FDpg:*
+*FvwmEvent-FDpg: Cmd
+*FvwmEvent-FDpg: new_page RestorePageFocus
+*FvwmEvent-FDpg: new_desk RestorePageFocus
+*FvwmEvent-FDpg: focus_change SavePageFocus
+
+Module FvwmEvent FvwmEvent-FDpg
+
+## Save focus window id on restart
+
+AddToFunc ExitFunction
++ I Test (ToRestart) Current InfoStoreAdd WFocusId $[w.id]
+
+# Show previous Window Id on restart.
+
+AddToFunc StartFunction
++ I Test (Restart) Schedule 1500 WindowId $[infostore.WFocusId] Focus
++ I Test (Restart) InfoStoreRemove WFocusId
+
+## Save current Desk on restart
+
+AddToFunc ExitFunction
++ I Test (ToRestart) InfoStoreAdd DeskNo "0 $[desk.n]"
++ I GoToDesk 0 0
+
+# Show previous Desk on restart
+
+AddToFunc StartFunction
++ I Test (Restart) Schedule 500 GoToDesk $[infostore.DeskNo]
++ I Test (Restart) InfoStoreRemove DeskNo
+
+## Vertical/horizontal tiling.
+## Test available text editor.
+## Monitor test.
+
+Read $[CORE_DIR]/1Functions/tile-edit-mon.sys
+
+#############
+# 2: STYLES (menu colors, etc) 
+#
+# Check userExt.sys
+# Example default/config
+
+## This sets the ClickTime and MoveThreshold used to
+## determine Double Clicks, Hold and Move for the mouse.
+
+ClickTime 250
+MoveThreshold 3
+
+## Sets all windows to OpaqueMove (vs a wired frame) and  windows will
+## snap to each other and the edge of the screen.
+
+OpaqueMoveSize unlimited
+Style * ResizeOpaque, SnapAttraction 15 SameType ScreenAll, SnapGrid
+
+## Transient Windows (such as open file windows).
+
+Style * DecorateTransient, StackTransientParent
+Style * !FPGrabFocusTransient, FPReleaseFocusTransient
+
+## WindowShade
+
+Style * WindowShadeScrolls, WindowShadeSteps 10
+
+## Ignore Numlock and other modifiers for bindings
+
+IgnoreModifiers L25
+
+## Disable Icons from appearing on desktop.
+# Comment this out or use Style * Icon to get the icons back.
+
+Style * !Icon
+
+## ICCCM allows windows to tell the WM to not give them keyboard focus.
+## This styles tells fvwm to ignore this property, which makes some
+## applications (such as java and electron apps) behave better.
+
+Style * Lenience
+
+## Window Specific Styles
+
+Style ConfirmQuit !Title, PositionPlacement Center, WindowListSkip, Layer 6
+Style FvwmIdent WindowListSkip
+
+###########
+# 3. COLORSETS (color settings, etc.)
+#
+
+Read $[CORE_DIR]/3Colorsets/FVWM-Colorsets.def
+
+# Check userExt.sys
+
+###########
+# 4. MENUS  (menu style, list, etc.)
+#
+
+# Check userExt.sys
+# Example default/config
+
+###########
+# 5. BINDINGS  (window list, move/resize, etc.)
+#
+
+Read $[CORE_DIR]/5Bindings/FVWM-Bindings.def
+
+# Check userExt.sys
+# Example default/config
+
+###########
+# 6. DECOR  (window title bar, border, etc.)
+#
+
+# Check userExt.sys
+# Example default/config
+
+############
+# 7: MODULES (control-panel, desk-icon, pager, etc.)
+
+## FvwmIdent
+#
+# FvwmIdent is a module that can be used to get the various info about
+# a window. One use is getting the class/resource/name of a window.
+
+DestroyModuleConfig FvwmIdent:*
+*FvwmIdent: Colorset 10
+*FvwmIdent: Font "xft:Sans:size=10:antialias=True"
+
+## FvwmScript
+#
+# FvwmScript is a module that allows one to write custom desktop
+# widgets and various other tools. This config uses two FvwmScripts.
+#   - DateTime - uses the output of "date" to display the date/time
+#     on the RightPanel.
+#   - Quit - This is a popup that asks for quit confirmation before
+#     quitting fvwm.
+
+DestroyModuleConfig FvwmScript:*
+*FvwmScript: DefaultColorset 10
+
+## FvwmEvent
+#
+# FvwmEvent is a module that can run an action or function
+# on specific events. This instance changes which desk number
+# is highlighted when the desk is changed.
+
+DestroyModuleConfig EventNewDesk:*
+*EventNewDesk: PassID
+*EventNewDesk: new_desk ChangeDesk
+
+#######################
+## USER
+#######################
+
+## To make changes and add new features without being overwritten
+## by new updates, this reads the userExt.sys file.
+
+Read $[HOME_DIR]/userExt.sys
+
+## FvwmButtons not to be focused.
+
+DestroyFunc NoFoc
+AddToFunc NoFoc
++ I Style *DLaunch* NeverFocus
++ I Style RightPager NeverFocus
++ I Style ControlMP NeverFocus
++ I Style ExitBar NeverFocus
++ I Style RightTbar NeverFocus
++ I Style HideBar NeverFocus
++ I Style NoDeskI NeverFocus
++ I Style Pgfunc NeverFocus
++ I Style WiconB NeverFocus
++ I Style PgNo NeverFocus
++ I Style FE-Label NeverFocus
++ I Style VdeskPager NeverFocus
++ I Style MenuB NeverFocus
+
+Schedule 3000 NoFoc

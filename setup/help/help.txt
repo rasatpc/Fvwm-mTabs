@@ -1,0 +1,44 @@
+FVWM-mTabs (ver. 0.9)
+
+The configs are organized into folders and loaded in same sequence as the default Fvwm.
+
+.fvwm/core/
+	1Functions
+	2Styles
+	3Colorsets
+	4Menus
+	5Bindings
+	6Decor
+	7Modules
+
+To add and make changes to the core and create your own without being overwritten by new updates, it includes one additional user folder and system file:
+
+.fvwm/user and .fvwm/userExt.sys -- user folder and a file for reading the core and user configs.
+
+This structure aids in maintaining, debugging, and developing new functions, decor, and modules.
+
+To manage wallpapers, including installation and configuration, there are two folders:
+
+.fvwm/images
+.fvwm/setup
+
+Configs with a folder includes readme.txt that describes how to install it and where to add it in .fvwm/userExt.sys.
+
+Preloaded settings are changed in userExt.sys, such as EdgeScroll, fonts, geometry, mouse click, and window placement.
+
+To make changes, copy the entire folder to .fvwm/user. For example, .fvwm/core/7Modules/SimpleButton, and modify the read line in userExt.sys.
+
+"Read $[CORE_DIR]/7Modules/SimpleButton/simpleB.sys" to
+"Read $[USER_DIR]/SimpleButton/simpleB.sysf"
+(with variable $[USER_DIR])
+
+Note: Three configs are automatically copied to .fvwm/user at first load.
+
+AutoMoveWin
+TMenu
+SimpleButton
+
+To edit, click on lable in the menu (left-click) <System>.
+
+By Rasat
+23 Feb 2026

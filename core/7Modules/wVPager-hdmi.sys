@@ -1,0 +1,63 @@
+## Modules/Extra: wVPager-hdmi.sys
+#
+# WORK VERTICAL PAGER
+
+SetEnv CORE_DIR $[HOME]/.fvwm/core
+SetEnv USER_DIR $[HOME]/.fvwm/user
+InfoStoreAdd PAGER "Read $[CORE_DIR]/7Modules/WorkVpager/wVPager.sys"
+
+## Colorsets
+ColorSet 24 RootTransparent Buffer, Tint #4a516a 45, fg white, bg black
+Colorset 18 fg #ffffff, bg #306ea2, hi #ffffff, sh #ffffff, Plain
+Colorset 17 fg #ffffff, bg #028383, hi, sh, Plain, NoShape
+
+KillModule FvwmButtons RightPager
+KillModule FvwmPager V2x4Pager
+KillModule FvwmPager V1x5Pager
+KillModule FvwmPager ControlPagerB
+KillModule FvwmButtons HideWBar
+KillModule FvwmButtons WorkBar
+KillModule FvwmButtons SimpleButton
+KillModule FvwmPager VdeskPager
+
+## Vertical Pager (3 desk with 6 pages)
+
+DesktopName 0 Web
+DesktopName 1 Email
+DesktopName 2 Office
+
+DesktopSize "0 1"  ## (columns - rows)
+
+Module FvwmPager VdeskPager 0 2  ## (desk number - number of desks)
+
+DestroyModuleConfig VdeskPager: *
+*VdeskPager: Geometry 150x240-0+10
+*VdeskPager: Rows 3  ## (page rows)
+*VdeskPager: MonitorLabels
+*VdeskPager: Colorset * 24
+*VdeskPager: HilightColorset * 17  ## (active page background)
+*VdeskPager: BalloonColorset * 10  ## (font color)
+*VdeskPager: WindowColorsets 37 18  ## (inactive - active apps)
+*VdeskPager: Font "xft:Sans:size=10:antialias=True"
+*VdeskPager: WindowBorderWidth 1
+*VdeskPager: BalloonStringFormat %c
+*VdeskPager: BallonYOffset +2
+*VdeskPager: Window3dBorders
+*VdeskPager: UseSkipList # hides modules
+*VdeskPager: MiniIcons
+
+Style VdeskPager NoTitle, !Handles, Borders, BorderWidth 1, BorderColorset 6, Sticky, WindowListSkip, FixedSize, !Iconifiable
+
+## Change preloaded settings
+*ControlMP: Geometry 330x34-170+10
+
+## Titlebar Right Click (check mMenu.conf Send To)
+
+DestroyMenu SendToDesk
+AddToMenu SendToDesk
++ " Web Desk  " MoveToDesk 0 0
++ " Email Desk " MoveToDesk 0 1
++ " Office Desk  " MoveToDesk 0 2
++ "-" Nop
++ " Right Page " Move w+115 w
++ " Left Page  " Move w-115 w

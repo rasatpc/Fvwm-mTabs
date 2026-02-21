@@ -1,0 +1,10 @@
+README
+
+Here you can add your own configs without getting affected by version updates or other official changes.
+
+For example, copy one of the config from .fvwm/core or make your own, and add with Read+link in .fvwm/userExt.sys.
+
+Replace $[CORE_DIR] with $[USER_DIR], example:
+Read $[CORE_DIR]/4Menus/TMenu/tMenu.conf
+to
+Read $[USER_DIR]/TMenu/tMenu.conf

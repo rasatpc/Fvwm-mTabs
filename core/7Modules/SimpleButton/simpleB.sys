@@ -1,0 +1,55 @@
+## Modules: simpleB.sys
+#
+# DESKTOP ICONS PANEL
+# https://www.fvwm.org/Wiki/Panels/SimpleButtons/
+#
+# Copy this config to ~/.fvwm/user and edit for your installed apps.
+
+## Set app icon folder
+SetEnv USER_DIR $[HOME]/.fvwm/user
+SetEnv sbicons $[USER_DIR]/SimpleButton/icons/icon48x48
+
+## Icon Panel
+## Geometry example:
+## [width]x[hight]+[left-right]+[top-down]
+
+Module FvwmButtons SimpleButton
+
+DestroyModuleConfig SimpleButton: *
+*SimpleButton: Geometry 60x605+10+192
+*SimpleButton: Fore Black
+*SimpleButton: Back #009393
+*SimpleButton: PressColorset 7
+*SimpleButton: Colorset 15
+*SimpleButton: Pixmap none
+*SimpleButton: Frame 0
+
+## Add or remove below buttons.
+
+*SimpleButton: Rows 10  ## (as per numbers of icons)
+
+*SimpleButton: (1x1) Icon $[sbicons]/edit-button.png,  \
+	Action(Mouse 1) $[infostore.EDT] $[USER_DIR]/SimpleButton/simpleB.sys, Frame 0)
+
+*SimpleButton: (1x1, Icon $[sbicons]/org.gnome.Nautilus.png, \
+				Action(Mouse 1) "Exec exec thunar", Frame 0)
+*SimpleButton: (1x1, Icon $[sbicons]/searchBlue.png, \
+				Action(Mouse 1) "Exec exec xfce4-appfinder", Frame 0)
+*SimpleButton: (1x1, Icon $[sbicons]/firefox.png, \
+              Action(Mouse 1) "Exec exec firefox", Frame 0)
+*SimpleButton: (1x1, Icon $[sbicons]/libreoffice-main.png, \
+              Action(Mouse 1) "Exec exec libreoffice, Frame 0")
+*SimpleButton: (1x1,Icon $[sbicons]/evolution.png, \
+				Action(Mouse 1) "Exec exec evolution", Frame 0)
+*SimpleButton: (1x1, Icon $[sbicons]/gimp.png, \
+				Action(Mouse 1) "Exec exec gimp", Frame 0)
+*SimpleButton: (1x1, Icon $[sbicons]/scribus.png, \
+				Action(Mouse 1) "Exec exec scribus", Frame 0)   
+*SimpleButton: (1x1, Icon $[sbicons]/screenshooter.png, \
+				Action(Mouse 1) "Exec exec xfce4-screenshooter", Frame 0)
+*SimpleButton: (1x1, Icon $[sbicons]/gparted.png, \
+				Action(Mouse 1) "Exec exec /usr/sbin/gparted", Frame 0)
+				
+## Style setting
+Style SimpleButton NoTitle, NoHandles, Sticky, WindowListSkip, \
+	BorderWidth 1, BorderColorset 12, CirculateSkip, StaysOnBottom, NeverFocus
