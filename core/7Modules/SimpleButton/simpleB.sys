@@ -38,7 +38,7 @@ DestroyModuleConfig SimpleButton: *
 *SimpleButton: (1x1, Icon $[sbicons]/firefox.png, \
               Action(Mouse 1) "Exec exec firefox", Frame 0)
 *SimpleButton: (1x1, Icon $[sbicons]/libreoffice-main.png, \
-              Action(Mouse 1) "Exec exec libreoffice, Frame 0")
+              Action(Mouse 1) "Exec exec libreoffice", Frame 0)
 *SimpleButton: (1x1,Icon $[sbicons]/evolution.png, \
 				Action(Mouse 1) "Exec exec evolution", Frame 0)
 *SimpleButton: (1x1, Icon $[sbicons]/gimp.png, \

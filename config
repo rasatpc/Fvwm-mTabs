@@ -80,7 +80,7 @@ AddToFunc   StartFunction
 + I Test (Init) InitBackground
 + I Module FvwmEvent EventNewDesk
 + I Module FvwmMFL
-+ I ModulePath ${HOME}/.fvwm/modules:+
++ I ModulePath ${HOME}/.fvwm/tab-module:+
 + I Module FvwmTabs
 
 ## Copy essential folders and files to assigned locations.
