@@ -1,13 +1,12 @@
 23 Feb 2026
 ################
-# HOW TO INSTALL Fvwm-kTabber on FVWM3 (or Fvwm2)
+# HOW TO INSTALL Fvwm-mTab on FVWM3 (or Fvwm2)
 ################
 
 Download:
 * https://github.com/rasatpc/Fvwm-mTabs/archive/refs/heads/main.zip
 
 Extract and copy subfolders to ~/.fvwm
-
 
 # GENERAL
 # FVWM3 INSTALL & DEPENDENCIES 
@@ -67,18 +66,6 @@ Arch Linux:
 
 Fedora:
 * sudo dnf install libevent-devel libxkbcommon-devel libX11-devel libXext-devel libXft-devel libXrandr-devel libXrender-devel libXt-devel libXft-devel xorg-x11-xtrans-devel esmtp libesmtp
-
-OPTIONAL
-========
-
-MX Linux:
-* sudo apt-get install libfribidi-dev libncurses5-dev libpng-dev libreadline-dev librsvg-dev libxcursor-dev libxfixes-dev libxi-dev libxpm-dev sharutils
-
-Arch Linux:
-* sudo pacman -Sy libpng libxcursor libxpm sharutils fribidi ncurses libpng readline libsm libxi
-
-Fedora:
-* sudo dnf install fribidi-devel ncurses-devel libpng-devel readline-devel libXcursor-devel libXpm-devel sharutils
 
 For meson or make & install command dependencies:
 =================================================

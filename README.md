@@ -14,7 +14,7 @@ Fvwm-mTabs is a simplified version of KISe and myExt that uses FvwmTabs. It is a
 	desk/page.
 
 * Icon/Application Panel.
-* Task Panel.
+* Pager/Task Panel.
 * XDG menu.
 * Day/Time Panel.
 * 4-button Window Title Bar.
