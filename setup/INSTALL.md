@@ -31,11 +31,11 @@ Documentation, XDG menu, Network and Volume Icon (add icon in system tray):
 * sudo pacman -Sy asciidoctor python python-pyxdg stalonetray volumeicon libxslt
 * sudo dnf install rubygem-asciidoctor xdg-utils stalonetray volumeicon python
 
-Required by Thumbnails:
+Required by FvwmTabs and Thumbnails:
 ===============================================================
-* sudo apt install imagemagick x11-apps
-* sudo pacman -Sy imagemagick qt5-default
-* sudo dnf install ImageMagick xwd qt5-default
+* sudo apt install perl-tk libx11-protocol-perl imagemagick x11-apps
+* sudo pacman -Sy perl-tk perl-x11-protocol imagemagick qt5-default
+* sudo dnf install perl-tk perl-X11-Protocol ImageMagick xwd qt5-default
 
 Search apps and Keyboard indicator/switcher
 ===============================================================
@@ -73,29 +73,16 @@ For meson or make & install command dependencies:
 * sudo pacman -Sy automake autogen meson xtrans
 * sudo dnf install automake dh-autoreconf autogen meson git
 
-Download GitHub and install:
-============================
-
-* git clone https://github.com/fvwmorg/fvwm3.git
-* cd fvwm3
-* ./autogen.sh
-* ./configure --prefix=/usr --enable-mandoc
-* make
-* sudo make install
-
-Uninstall:
-* sudo make uninstall
-
 Download GitHub and meson install:
 ===============================================
 * git clone https://github.com/fvwmorg/fvwm3.git
 * cd fvwm3
-* meson setup --prefix=/usr -Dmandoc=true -Dhtmldoc=true build
-* ninja -C build
-* sudo meson install -C build
+* meson setup --prefix=/usr -Dmandoc=true -Dhtmldoc=true builds
+* ninja -C builds
+* sudo meson install -C builds
 
 Uninstall:
-sudo ninja uninstall -C build
+sudo ninja uninstall -C builds
 
 #############
 # END GITHUB
