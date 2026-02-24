@@ -6,7 +6,8 @@ SetEnv CORE_DIR $[HOME]/.fvwm/core
 ## Help Drop Menu
 
 ### IMPORTANT ###
-# Variable EDT adds the available text editor from .fvwm/config.
+# Variable EDT adds the available text editor
+# from .fvwm/core/tile-edit-mon.sys
 
 DestroyMenu MenuStart
 AddToMenu MenuStart

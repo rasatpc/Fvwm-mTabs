@@ -1,8 +1,9 @@
 ## Functions: autoMoveW.sys
-## Automatically move applications to specific desk/page/tab when they create windows.
+#
+## Automatically move applications to a specific desk/page/tab when they
+## create windows. Combined with FvwmTabs autoSwallow, that swallow
+## automatically apps, check tab-module/FvwmTabs.conf.
 ## Loading FvwmTabs, check userExt.sys.
-## FvwmTabs autoSwallow specify windows to swallow automatically
-## check modules/FvwmTabs.conf.
 #
 ## # Copy this config to ~/.fvwm/user and edit for your installed apps.
 
@@ -10,10 +11,9 @@
 ##		APPS		COMMAND			DESK/PAGE/SCREEN LOCATION
 ## --------------------------------------------------------------------
 
-Style	"FvwmTabs [0]"	StartsOnPage	0 0 0		# desk 0 page
-Style	"FvwmTabs [1]"	StartsOnPage	1 0 0		# desk 1 page
-# Style	"FvwmTabs [2]"	StartsOnPage	2 0 0		# desk 2 page
-Style	*Firefox 	StartsOnPage	0 0 0			# desk 0 page 
-Style	Gimp		StartsOnPage	2 0 0			# desk 2 page
-Style	scribus		StartsOnPage	2 0 0			# desk 2 page
-
+Style	"FvwmTabs [0]"	StartsOnPage	0 0 0	# desk 0 page
+Style	"FvwmTabs [1]"	StartsOnPage	1 0 0	# desk 1 page
+# Style	"FvwmTabs [2]"	StartsOnPage	2 0 0	# desk 2 page
+Style	*Firefox 		StartsOnPage	0 0 0	# desk 0 page 
+Style	Gimp			StartsOnPage	2 0 0	# desk 2 page
+Style	scribus			StartsOnPage	2 0 0	# desk 2 page

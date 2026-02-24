@@ -29,6 +29,7 @@ Tested on Fvwm3 and Fvwm2
 
 Download:
 
+* Version 0.9
 * https://github.com/rasatpc/Fvwm-mTabs/archive/refs/heads/main.zip
 
 Extract and copy subfolders to ~/.fvwm

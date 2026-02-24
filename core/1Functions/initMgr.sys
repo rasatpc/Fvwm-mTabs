@@ -1,4 +1,5 @@
 ## Functions: initMgr.sys
+#
 ## This script is placed at the beginning of ~/.fvwm/config. It
 ## starts wifi, screen brightness & battery, sound volume, and
 ## root authorization.

@@ -1,4 +1,5 @@
 ## Functions: deskL.sys
+#
 ## Normally an icon represents a minimized application. If you want
 ## to turn that around, and launch functions or modules by clicking
 ## on icons. Here’s to do that using FvwmButtons.
@@ -9,7 +10,7 @@ SetEnv CORE_DIR $[HOME]/.fvwm/core
 SetEnv USER_DIR $[HOME]/.fvwm/user
 
 ################
-# Iconify all except focused window.
+# Iconify all except the focused window.
 ######
 
 ## Iconify switch.
