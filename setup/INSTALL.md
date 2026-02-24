@@ -84,6 +84,12 @@ Download GitHub and meson install:
 Uninstall:
 sudo ninja uninstall -C builds
 
+Compiling fvwm3 is best used with the ./build wrapper script.
+* ./build -fdi -p /usr/
+
+Uninstall:
+sudo ninja uninstall -C build
+
 #############
 # END GITHUB
 #############
