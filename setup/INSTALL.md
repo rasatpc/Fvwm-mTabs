@@ -88,7 +88,8 @@ Compiling fvwm3 is best used with the ./build wrapper script.
 * ./build -fdi -p /usr/
 
 Uninstall:
-sudo ninja uninstall -C build
+* cd compile
+* sudo ninja uninstall
 
 #############
 # END GITHUB
