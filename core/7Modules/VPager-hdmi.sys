@@ -1,24 +1,13 @@
-## Modules/Extra: wVPager-hdmi.sys
+## Modules/Extra: VPager-hdmi.sys
 #
 # WORK VERTICAL PAGER
 
 SetEnv CORE_DIR $[HOME]/.fvwm/core
 SetEnv USER_DIR $[HOME]/.fvwm/user
-InfoStoreAdd PAGER "Read $[CORE_DIR]/7Modules/WorkVpager/wVPager.sys"
 
 ## Colorsets
-ColorSet 24 RootTransparent Buffer, Tint #4a516a 45, fg white, bg black
 Colorset 18 fg #ffffff, bg #306ea2, hi #ffffff, sh #ffffff, Plain
 Colorset 17 fg #ffffff, bg #028383, hi, sh, Plain, NoShape
-
-KillModule FvwmButtons RightPager
-KillModule FvwmPager V2x4Pager
-KillModule FvwmPager V1x5Pager
-KillModule FvwmPager ControlPagerB
-KillModule FvwmButtons HideWBar
-KillModule FvwmButtons WorkBar
-KillModule FvwmButtons SimpleButton
-KillModule FvwmPager VdeskPager
 
 ## Vertical Pager (3 desk with 6 pages)
 
@@ -31,14 +20,14 @@ DesktopSize "0 1"  ## (columns - rows)
 Module FvwmPager VdeskPager 0 2  ## (desk number - number of desks)
 
 DestroyModuleConfig VdeskPager: *
-*VdeskPager: Geometry 150x240-0+10
+*VdeskPager: Geometry 140x240-0+10
 *VdeskPager: Rows 3  ## (page rows)
 *VdeskPager: MonitorLabels
-*VdeskPager: Colorset * 24
+*VdeskPager: Colorset * 15
 *VdeskPager: HilightColorset * 17  ## (active page background)
 *VdeskPager: BalloonColorset * 10  ## (font color)
 *VdeskPager: WindowColorsets 37 18  ## (inactive - active apps)
-*VdeskPager: Font "xft:Sans:size=10:antialias=True"
+*VdeskPager: Font "xft:Sans:size=12:antialias=True"
 *VdeskPager: WindowBorderWidth 1
 *VdeskPager: BalloonStringFormat %c
 *VdeskPager: BallonYOffset +2
@@ -46,10 +35,10 @@ DestroyModuleConfig VdeskPager: *
 *VdeskPager: UseSkipList # hides modules
 *VdeskPager: MiniIcons
 
-Style VdeskPager NoTitle, !Handles, Borders, BorderWidth 1, BorderColorset 6, Sticky, WindowListSkip, FixedSize, !Iconifiable
+Style VdeskPager NoTitle, !Handles, BorderWidth 1, BorderColorset 12, Sticky, WindowListSkip, FixedSize, !Iconifiable
 
 ## Change preloaded settings
-*ControlMP: Geometry 330x34-170+10
+*ControlMP: Geometry 330x34-152+10
 
 ## Titlebar Right Click (check mMenu.conf Send To)
 

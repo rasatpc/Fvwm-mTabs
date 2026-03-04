@@ -13,7 +13,6 @@
 Read $[CORE_DIR]/1Functions/deskPgNo.sys
 Read $[CORE_DIR]/1Functions/deskIcons.sys
 Read $[CORE_DIR]/1Functions/Thumbnails/thumbnail.sys
-# Read $[CORE_DIR]/1Functions/autoMoveW.sys
 
 ## USER ($[USER_DIR])
 Read $[USER_DIR]/autoMoveW.sys
@@ -31,8 +30,6 @@ Read $[CORE_DIR]/3Colorsets/kColorsets.sys
 ###########
 # 4. MENUS  (menu style, list, etc.)
 ###########
-
-# Read $[CORE_DIR]/4Menus/TMenu/tMenu.conf
 
 ## USER ($[USER_DIR])
 Read $[USER_DIR]/TMenu/tMenu.conf
@@ -62,8 +59,8 @@ Read $[CORE_DIR]/6Decor/5BtmLine/button5L.sys
 
 Read $[CORE_DIR]/7Modules/ControlMinPanel/controlMP.sys
 Read $[CORE_DIR]/7Modules/RightTaskBar/rightTbar.sys
-Read $[CORE_DIR]/7Modules/vPager.sys
-# Read $[USER_DIR]/7Modules/SimpleButton/simpleB.sys
+Schedule 500 Read $[CORE_DIR]/7Modules/vPager.sys
+# Schedule 500 Read $[CORE_DIR]/7Modules/VPager-hdmi.sys
 
 ## USER ($[USER_DIR])
 Read $[USER_DIR]/SimpleButton/simpleB.sys

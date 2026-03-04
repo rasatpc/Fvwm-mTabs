@@ -59,3 +59,6 @@ DestroyModuleConfig FE-Monitor: *
 
 KillModule FvwmEvent FE-Monitor
 Module FvwmEvent FE-Monitor
+
+# NOTE: For dual monitor, add below line in .fvwm/userExt.sys
+# Read $[CORE_DIR]/7Modules/VPager-hdmi.sys

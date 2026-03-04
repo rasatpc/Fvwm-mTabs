@@ -37,7 +37,7 @@ Required by FvwmTabs and Thumbnails:
 * sudo pacman -Sy perl-tk perl-x11-protocol imagemagick qt5-default
 * sudo dnf install perl-tk perl-X11-Protocol ImageMagick xwd qt5-default
 
-Search apps and Keyboard indicator/switcher
+Search apps and Keyboard indicator/switcher:
 ===============================================================
 * sudo apt install xfce4-appfinder gxkb
 * sudo pacman -Sy xfce4-appfinder gxkb
@@ -45,11 +45,12 @@ Search apps and Keyboard indicator/switcher
 
 Configure keyboard layout ~/.config/gxkb/gxkb.cfg
 
-Required by other scripts:
+Required by other scripts, adjust as per screen resolution
+and dual monitor:
 ===============================================================
-* sudo apt install sed
-* sudo pacman -Sy sed
-* sudo dnf install sed
+* sudo apt install sed x11-utils arandr x11-xserver-utils
+* sudo pacman -Sy sed xorg-xdpyinfo arandr x11-xserver-utils
+* sudo dnf install sed xdpyinfo arandr x11-xserver-utils
 
 #############
 # ALTERNATIVE

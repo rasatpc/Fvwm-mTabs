@@ -37,7 +37,7 @@ DestroyModuleConfig VdeskPager: *
 Style VdeskPager NoTitle, !Handles, BorderWidth 1, BorderColorset 12, Sticky, WindowListSkip, FixedSize, !Iconifiable
 
 ## Change preloaded settings
-*ControlMP: Geometry 330x32-132+10
+# *ControlMP: Geometry 330x32-132+10
 
 ## Titlebar Right Click (check mMenu.conf Send To)
 

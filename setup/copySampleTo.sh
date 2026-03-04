@@ -41,12 +41,11 @@ if [ ! -f "$FILEa" ]; then
     cp -r $HOME/.fvwm/core/1Functions/autoMoveW.sys $HOME/.fvwm/user/
 fi
 
-## Backup FvwmTabs.conf and copy if it does not exist in core/modules.
+## Backup FvwmTabs.conf and copy if it does not exist in core/tab-module.
 
-cp -r $HOME/.fvwm/modules/FvwmTabs.conf $HOME/.fvwm/user/Backup/
-
-cd $HOME/.fvwm/modules
-FILEm=FvwmTabs.conf
-if [ ! -f "$FILEm" ]; then
-    cp -r $HOME/.fvwm/user/Backup/FvwmTabs.conf $HOME/.fvwm/modules/
+cd $HOME/.fvwm/user/Backup
+FILEt=FvwmTabs.conf
+if [ -f "$FILEt" ]; then
+    cp -r $HOME/.fvwm/user/Backup/FvwmTabs.conf $HOME/.fvwm/tab-module/
+    cp -r $HOME/.fvwm/tab-module/FvwmTabs.conf $HOME/.fvwm/user/Backup/
 fi
