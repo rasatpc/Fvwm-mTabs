@@ -18,10 +18,8 @@ Fvwm-mTabs is a simplified version of KISe and myExt that uses FvwmTabs. It is a
 * XDG menu.
 * Day/Time Panel.
 * 4-button Window Title Bar.
-* Auto Move Windows.
+* Auto Move Windows and FvwmTabs.
 * Page Indicator.
-* Tiled and scalable wallpaper features.
-* Window focus on all desks and pages.
 
 Tested on Fvwm3 and Fvwm2
 
@@ -29,7 +27,7 @@ Tested on Fvwm3 and Fvwm2
 
 Download:
 
-* Version 0.9
+* Version 0.9.1
 * https://github.com/rasatpc/Fvwm-mTabs/archive/refs/heads/main.zip
 
 Extract and copy subfolders to ~/.fvwm

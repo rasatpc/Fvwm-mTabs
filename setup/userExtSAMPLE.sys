@@ -115,8 +115,6 @@ DefaultFont "xft:Noto:Sans:size=11"
 ##### Add tabs on each desk at startup.
 ## Check user/autoMoveW.sys
 
-#Schedule 500 Style FvwmTabs* NeverFocus
-
 DestroyFunc Tabs
 AddToFunc Tabs
 + I NewTabber --geometry=175x70

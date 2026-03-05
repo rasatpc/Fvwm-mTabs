@@ -76,7 +76,7 @@ DesktopConfiguration global
 # actions that are run after a restart.
 
 DestroyFunc StartFunction
-AddToFunc   StartFunction
+AddToFunc StartFunction
 + I Test (Init) InitBackground
 + I Module FvwmEvent EventNewDesk
 + I Module FvwmMFL
@@ -358,4 +358,4 @@ AddToFunc NoFoc
 + I Style VdeskPager NeverFocus
 + I Style MenuB NeverFocus
 
-Schedule 3000 NoFoc
+Schedule 2600 NoFoc

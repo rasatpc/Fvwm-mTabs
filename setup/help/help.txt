@@ -1,4 +1,4 @@
-FVWM-mTabs (ver. 0.9)
+FVWM-mTabs (ver. 0.9.1)
 
 The configs are organized into folders and loaded in same sequence as the default Fvwm.
 
@@ -40,5 +40,7 @@ SimpleButton
 
 To edit, click on lable in the menu (left-click) <System>.
 
+Backup of .fvwm/tab-module/FvwmTabs.conf in .fvwm/user/Backup
+
 By Rasat
-03 Mar 2026
+05 Mar 2026

@@ -5,6 +5,9 @@
 # TMenu
 # SimpleButton to core/user
 # autoMoveW.sys to core/user
+#
+## Check if symlink exist.
+# .fvwm/tab-module/FvwmTabs.conf
 ##
 
 cd $HOME/.fvwm
@@ -41,11 +44,10 @@ if [ ! -f "$FILEa" ]; then
     cp -r $HOME/.fvwm/core/1Functions/autoMoveW.sys $HOME/.fvwm/user/
 fi
 
-## Backup FvwmTabs.conf and copy if it does not exist in core/tab-module.
+## Check if FvwmTabs.conf symlink does not exist in .fvwm/tab-module.
 
-cd $HOME/.fvwm/user/Backup
+cd $HOME/.fvwm/tab-module
 FILEt=FvwmTabs.conf
-if [ -f "$FILEt" ]; then
-    cp -r $HOME/.fvwm/user/Backup/FvwmTabs.conf $HOME/.fvwm/tab-module/
-    cp -r $HOME/.fvwm/tab-module/FvwmTabs.conf $HOME/.fvwm/user/Backup/
+if [ ! -f "$FILEt" ]; then
+   ln -s $HOME/.fvwm/user/Backup/FvwmTabs.conf FvwmTabs.conf 
 fi
