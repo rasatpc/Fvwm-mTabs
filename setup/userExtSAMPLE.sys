@@ -1,4 +1,5 @@
 ## Copy and rename .fvwm/setup/userExtSAMPLE.sys to .fvwm/userExt.sys
+
 ## This file is for you to make changes (tag and untag) and add your own.
 
 ## Tag core config and replace $[CORE_DIR] with $[USER_DIR]
@@ -93,8 +94,11 @@ Style * ClickToFocus, FPGrabFocus
 ##### Window Placement
 ## Style to center the window location.
 
-Style * TileCascadePlacement
+Style * CascadePlacement
+#Style * TileCascadePlacement
 #Style * MinOverlapPlacement, GrabFocusOff, !UsePPosition
+
+Style FvwmTabs* PositionPlacement +0 +0
 
 ##### Exit panel 
 ## Center panel postion.

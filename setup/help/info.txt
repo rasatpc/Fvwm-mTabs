@@ -4,9 +4,9 @@ FVWM is a Window Manager (WM). What sets it apart from other WMs is that it is a
 
 FvwmTabs is a generic tabbing module for FVWM that was included in FVWM2. It can swallow any fvwm window and treat it as a tab in a tab-manager window.
 
-Each tab manager can store any number of windows, each in its own tab. The number of tab managers is limited only by system resources. Tab managers can even be nested or swallowed within other tab managers.
+Each tab manager can store any number of windows, each in its own tab. The number of tab managers is limited only by system resources. Tab managers can even be nested or swallowed within other tab managers, and specify windows to swallow automatically.
 
-FVWM-mTabs (ver. 0.9.1)
+FVWM-mTabs (ver. 0.9.3)
 
 Fvwm-mTab is a streamlined version of KISe and myExt that began as a collection of pre-made configs. It offers a different approach to window management. The upgraded FvwmTabs provides a structured, efficient way to handle multiple documents or applications within a single container, significantly reducing desktop clutter and enhancing productivity. Similar to KISe's number of virtual workspaces (desks), but tabs are created within the same desk.
 
@@ -22,4 +22,4 @@ https://www.box-look.org
 Fvwm3-myExt extensions (configs) development started on 8 Dec 2020.
 Fvwm-KISe on 10 July 2023
 Fvwm-mTab
-Last update: 05 Mar 2026
+Last update: 07 Mar 2026

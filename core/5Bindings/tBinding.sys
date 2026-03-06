@@ -40,5 +40,5 @@ Silent Key x A M Close
 
 Silent Key a A M AddTab
 
-## mTab bindings
-# /.fvwm/modules/FvwmTabs-DefaultSetup
+## FvwmTabs bindings
+# .fvwm/tab-module/FvwmTabs-DefaultSetup
