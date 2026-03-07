@@ -89,6 +89,7 @@ Colorset 62 HGradient 20 #666c63 #ababab
 Colorset 63 VGradient 20 #ababab #666c63
 Colorset 64 fg #666c63, bg #666c63
 Colorset 65 fg #ababab, bg #ababab hi #ffffff, sh #ababab, Plain, NoShape
+Colorset 66 fg #ffffff, bg #18658d, hi, sh, Plain, NoShape
 
 ## Colorset 67 to 84 reserved for FancyDecor.
 ## Fvwm myEXT: .fvwm/extraEXT/Decors/FancyDecor/

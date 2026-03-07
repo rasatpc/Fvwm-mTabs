@@ -7,7 +7,7 @@ SetEnv USER_DIR $[HOME]/.fvwm/user
 
 ## Colorsets
 Colorset 18 fg #ffffff, bg #306ea2, hi #ffffff, sh #ffffff, Plain
-Colorset 17 fg #ffffff, bg #028383, hi, sh, Plain, NoShape
+Colorset 66 fg #ffffff, bg #18658d, hi, sh, Plain, NoShape
 
 ## Vertical Pager (3 desk with 6 pages)
 
@@ -24,7 +24,7 @@ DestroyModuleConfig VdeskPager: *
 *VdeskPager: Rows 3  ## (page rows)
 *VdeskPager: MonitorLabels
 *VdeskPager: Colorset * 15
-*VdeskPager: HilightColorset * 17  ## (active page background)
+*VdeskPager: HilightColorset * 66  ## (active page background)
 *VdeskPager: BalloonColorset * 10  ## (font color)
 *VdeskPager: WindowColorsets 37 18  ## (inactive - active apps)
 *VdeskPager: Font "xft:Sans:size=12:antialias=True"

@@ -11,7 +11,8 @@ SetEnv logo-icon $[CORE_DIR]/7Modules/RightTaskBar/icons
 ## Color settings
 
 Colorset 12 fg #2d2d2d, bg #88b2b1, hi, sh, Plain, NoShape
-Colorset 21  fg #ffffff, bg #028383, hi, sh, Plain, NoShape
+Colorset 21 fg #ffffff, bg #028383, hi, sh, Plain, NoShape
+Colorset 66 fg #ffffff, bg #18658d, hi, sh, Plain, NoShape
 
 ## FvwmScript date/time background color setting.
 
@@ -45,7 +46,7 @@ Test (!x stalonetray) PipeRead 'echo "*RightTbar: (120x$(($[vp.height]-430)),\
 *RightTbar: (120x5, Frame 0, Colorset 15)
 *RightTbar: (120x45, Swallow DateTime 'Module FvwmScript FvwmScript-DateTime', Frame 0)
 *RightTbar: (120x5, Frame 0, Colorset 15)
-*RightTbar: (120x30, Colorset 21, Frame 0)
+*RightTbar: (120x30, Colorset 66, Frame 0)
 
 ## Style settings
 
