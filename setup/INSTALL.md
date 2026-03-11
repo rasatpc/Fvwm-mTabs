@@ -31,11 +31,11 @@ Documentation, XDG menu, Network and Volume Icon (add icon in system tray):
 * sudo pacman -Sy asciidoctor python python-pyxdg stalonetray volumeicon libxslt
 * sudo dnf install rubygem-asciidoctor xdg-utils stalonetray volumeicon python
 
-Required by FvwmTabs and Thumbnails:
+Required by FvwmTabs, Thumbnails, and Wallpaper::
 ===============================================================
-* sudo apt install perl-tk libx11-protocol-perl imagemagick x11-apps
-* sudo pacman -Sy perl-tk perl-x11-protocol imagemagick qt5-default
-* sudo dnf install perl-tk perl-X11-Protocol ImageMagick xwd qt5-default
+* sudo apt install perl-tk libx11-protocol-perl imagemagick x11-apps feh
+* sudo pacman -Sy perl-tk perl-x11-protocol imagemagick qt5-default feh
+* sudo dnf install perl-tk perl-X11-Protocol ImageMagick xwd qt5-default feh
 
 Search apps and Keyboard indicator/switcher:
 ===============================================================

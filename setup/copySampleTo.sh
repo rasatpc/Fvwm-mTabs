@@ -44,14 +44,27 @@ if [ ! -f "$FILEa" ]; then
     cp -r $HOME/.fvwm/core/1Functions/autoMoveW.sys $HOME/.fvwm/user/
 fi
 
-## Check if FvwmTabs.conf does not exist in .fvwm/user/Backup/.
-## Create FvwmTabs.conf symlink does in .fvwm/tab-module/.
+## Check ver.0.9.3 Backup directory
+## Rename and create symlink.
 
-cd $HOME/.fvwm/user/Backup
+backup=$HOME/.fvwm/user/Backup
+
+if [ -d "$backup" ]; then
+  rm -r $HOME/.fvwm/user/Tab
+  mv $HOME/.fvwm/user/Backup $HOME/.fvwm/user/Tab
+  cd $HOME/.fvwm/tab-module/
+  rm FvwmTabs.conf
+  ln -s $HOME/.fvwm/user/Tab/FvwmTabs.conf FvwmTabs.conf
+fi
+
+## Check if FvwmTabs.conf does not exist in .fvwm/user/Tab/.
+## Create FvwmTabs.conf symlink in .fvwm/tab-module/.
+
+cd $HOME/.fvwm/user/Tab
 FILEt=FvwmTabs.conf
 if [ ! -f "$FILEt" ]; then
-	cp -r $HOME/.fvwm/tab-module/FvwmTabs.conf $HOME/.fvwm/user/Backup/
+	cp -r $HOME/.fvwm/tab-module/FvwmTabs.conf $HOME/.fvwm/user/Tab/
 	cd $HOME/.fvwm/tab-module/
 	rm FvwmTabs.conf
-	ln -s $HOME/.fvwm/user/Backup/FvwmTabs.conf FvwmTabs.conf
+	ln -s $HOME/.fvwm/user/Tab/FvwmTabs.conf FvwmTabs.conf
 fi
