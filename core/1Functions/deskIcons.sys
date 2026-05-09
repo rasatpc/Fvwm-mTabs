@@ -46,9 +46,6 @@ AddToFunc ToggleMaximize
 + I Current Maximize ewmhiwa
 + I Style (Resource ScreenDLaunch*) StaysOnTop, NeverFocus
 
-# OverView (check function FvwmExpose)
-# core/ExposeList/
-
 ################
 # Vertical/horizontal tiling
 ######
@@ -76,7 +73,7 @@ Style FvwmButtons !Iconifiable
 ## Panel
 
 DestroyModuleConfig DeskTitleIcon: *
-*DeskTitleIcon: Geometry 464x32-728+10
+*DeskTitleIcon: Geometry 366x32-777+10
 *DeskTitleIcon: Fore #ffffff
 *DeskTitleIcon: Back #2b4e5e
 *DeskTitleIcon: PressColorset 7
@@ -86,13 +83,11 @@ DestroyModuleConfig DeskTitleIcon: *
 *DeskTitleIcon: Font "xft:Sans:size=12:antialias=True"
   
 *DeskTitleIcon: (84x1, Title Iconify, Action AIconic)
-*DeskTitleIcon: (10x1, Colorset 15, Action (Mouse 1) Nop)
+*DeskTitleIcon: (10x1, Colorset 22
 *DeskTitleIcon: (84x1, Title Screen, Action ToggleMaximize)
-*DeskTitleIcon: (10x1, Colorset 15, Action (Mouse 1) Nop)
-*DeskTitleIcon: (88x1, Title OverView, Action FvwmExpose)
-*DeskTitleIcon: (10x1, Colorset 15, Action (Mouse 1) Nop)
+*DeskTitleIcon: (10x1, Colorset 22
 *DeskTitleIcon: (84x1, Title Tile, Action TileW)
-*DeskTitleIcon: (10x1, Colorset 15, Action (Mouse 1) Nop)
+*DeskTitleIcon: (10x1, Colorset 22
 *DeskTitleIcon: (84x1, Title Tabs, Action Tabber)
 
 # Module FvwmButtons DeskTitleIcon

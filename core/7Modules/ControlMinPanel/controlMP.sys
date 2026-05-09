@@ -14,7 +14,7 @@ AddToMenu MenuStart
 + "Info " $[infostore.EDT] $[HOME_DIR]/setup/help/info.txt
 + "Bindings " $[infostore.EDT] $[CORE_DIR]/5Bindings/tBinding.sys
 
-+ "How To " Exec exec display -size 960x540 $[HOME]/.fvwm/setup/images/Fvwm-mTab-v0.9-help.png
++ "How To " Exec exec display -size 960x540 $[HOME]/.fvwm/setup/images/Fvwm-mTab-v1.0.1-help.png
 
 ## Set small icons
 
@@ -54,7 +54,7 @@ Style ControlMP !Borders, !Title, WindowListSkip, StaysOnTop, Sticky, NeverFocus
 DestroyModuleConfig ExitBar: *
 *ExitBar: Fore White
 *ExitBar: Back #028383
-*ExitBar: Geometry 62x152+0+0
+*ExitBar: Geometry 62x144+0+0
 *ExitBar: Rows 4
 *ExitBar: Frame 1
 ## Logout, Suspend, Restart, and Shutdown

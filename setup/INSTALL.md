@@ -1,4 +1,4 @@
-7 Mar 2026
+11 May 2026
 ################
 # HOW TO INSTALL Fvwm-mTab on FVWM3 (or Fvwm2)
 ################
@@ -33,9 +33,9 @@ Documentation, XDG menu, Network and Volume Icon (add icon in system tray):
 
 Required by FvwmTabs, Thumbnails, and Wallpaper::
 ===============================================================
-* sudo apt install perl-tk libx11-protocol-perl imagemagick x11-apps feh
-* sudo pacman -Sy perl-tk perl-x11-protocol imagemagick qt5-default feh
-* sudo dnf install perl-tk perl-X11-Protocol ImageMagick xwd qt5-default feh
+* sudo apt install python3-tk x11-utils xdotool imagemagick x11-apps feh
+* sudo pacman -Sy python3-tk x11-utils xdotool imagemagick qt5-default feh
+* sudo dnf install python3-tk x11-utils xdotool ImageMagick xwd qt5-default feh
 
 Search apps and Keyboard indicator/switcher:
 ===============================================================

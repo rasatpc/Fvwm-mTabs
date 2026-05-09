@@ -79,15 +79,20 @@ DestroyFunc StartFunction
 AddToFunc StartFunction
 + I Test (Init) InitBackground
 + I Module FvwmEvent EventNewDesk
-+ I Module FvwmMFL
-+ I ModulePath ${HOME}/.fvwm/tab-module:+
-+ I Module FvwmTabs
+#+ I Module FvwmMFL
+#+ I ModulePath ${HOME}/.fvwm/FvwmTabs:+
+#+ I Module FvwmTabs.py
 
-## Copy essential folders and files to assigned locations.
+## Copy essential folders and files to assigned locations
+## and deskIcon postion.
 
 Exec exec sh $[HOME_DIR]/setup/copySampleTo.sh
+Exec exec sh $[HOME_DIR]/setup/ButtonScreenPosition.sh
 
-## Load startup functions, wifi and system info.
+## Load FvwmTabs, startup functions, wifi and system info
+
+AddToFunc StartFunction
++ I Read $[FVWM_USERDIR]/FvwmTabs/ConfigFvwmTabs
 
 Read $[CORE_DIR]/1Functions/initMgr.sys
 

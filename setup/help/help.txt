@@ -1,4 +1,4 @@
-FVWM-mTabs (ver. 0.9.3)
+FVWM-mTabs (ver. 1.1.5)
 
 The configs are organized into folders and loaded in same sequence as the default Fvwm.
 
@@ -43,4 +43,4 @@ To edit, click on lable in the menu (left-click) <System>.
 Backup of .fvwm/tab-module/FvwmTabs.conf in .fvwm/user/Backup
 
 By Rasat
-07 Mar 2026
+11 May 2026

@@ -6,6 +6,7 @@
 
 ## Transparent
 ColorSet 15 RootTransparent Buffer, Tint #4a516a 50, fg white, bg black
+ColorSet 22 RootTransparent Buffer, Tint #4a516a 10, fg white, bg black
 
 # ColorSet 24 is reserved for variety of RootTransparent.
 

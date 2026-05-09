@@ -6,8 +6,6 @@
 # SimpleButton to core/user
 # autoMoveW.sys to core/user
 #
-## Check for FvwmTabs.conf.
-# If it exist and create symlink.
 ##
 
 cd $HOME/.fvwm
@@ -55,16 +53,4 @@ if [ -d "$backup" ]; then
   cd $HOME/.fvwm/tab-module/
   rm FvwmTabs.conf
   ln -s $HOME/.fvwm/user/Tab/FvwmTabs.conf FvwmTabs.conf
-fi
-
-## Check if FvwmTabs.conf does not exist in .fvwm/user/Tab/.
-## Create FvwmTabs.conf symlink in .fvwm/tab-module/.
-
-cd $HOME/.fvwm/user/Tab
-FILEt=FvwmTabs.conf
-if [ ! -f "$FILEt" ]; then
-	cp -r $HOME/.fvwm/tab-module/FvwmTabs.conf $HOME/.fvwm/user/Tab/
-	cd $HOME/.fvwm/tab-module/
-	rm FvwmTabs.conf
-	ln -s $HOME/.fvwm/user/Tab/FvwmTabs.conf FvwmTabs.conf
 fi

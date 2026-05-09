@@ -1,2 +1,2 @@
-7 Mar 2026
-Fvwm-mTabs ver. 0.9.3
+11 May 2026
+Fvwm-mTabs ver. 1.1.5

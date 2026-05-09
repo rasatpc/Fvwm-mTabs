@@ -1,6 +1,9 @@
 # Fvwm-mTabs
 Fvwm-mTabs is a simplified version of KISe and myExt that uses FvwmTabs. It is a generic tabbing module for FVWM that was included in FVWM2. It can swallow any fvwm window and treat it as a tab in a tab-manager window.
 
+# Upgrade from Perl-tk to Python 3 with Tkinter.
+# Check CHANGELOG.txt
+
 # Main features:
 * Desk Icons include:
 	Iconified Thumbnails, Full-Screen Maximize, Windows Overview,
@@ -27,7 +30,7 @@ Tested on Fvwm3 and Fvwm2
 
 Download:
 
-* Version 0.9.3
+* Version 1.1.5
 * https://github.com/rasatpc/Fvwm-mTabs/archive/refs/heads/main.zip
 
 Extract and copy subfolders to ~/.fvwm
