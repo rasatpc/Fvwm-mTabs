@@ -1,0 +1,147 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+import os
+from pathlib import Path
+import shutil
+import struct
+import subprocess
+import sys
+
+
+def _stderr(message):
+    print(f"FvwmTabs: {message}", file=sys.stderr)
+
+
+def _package_dir():
+    try:
+        return Path(__file__).resolve().parent
+    except Exception:
+        return Path(os.path.abspath(sys.argv[0])).parent
+
+
+def _fvwm_quote(value):
+    text = str(value)
+    if text and not any(ch.isspace() or ch in "\"'`\\" for ch in text):
+        return text
+    return '"' + text.replace("\\", "\\\\").replace('"', '\\"') + '"'
+
+
+def _module_write_fd(argv):
+    if len(argv) < 3:
+        return None
+    write_fd = argv[1]
+    read_fd = argv[2]
+    if not write_fd.isdecimal() or not read_fd.isdecimal():
+        return None
+    write_fd = int(write_fd)
+    read_fd = int(read_fd)
+    if write_fd < 0 or read_fd < 0:
+        return None
+    return write_fd
+
+
+def _send_module_command(write_fd, command):
+    payload = command.encode("utf-8")
+    try:
+        # FVWM module commands use native C long fields, matching fvwm's
+        # pack("l!l!a...l!") convention in the shipped Perl module helpers.
+        os.write(write_fd, struct.pack("@l", 0))
+        os.write(write_fd, struct.pack("@l", len(payload)))
+        os.write(write_fd, payload)
+        os.write(write_fd, struct.pack("@l", 0))
+    except OSError as err:
+        raise RuntimeError(str(err)) from err
+
+
+def _run_fallback(command, config_path):
+    prompt = shutil.which("FvwmPrompt")
+    if prompt:
+        try:
+            result = subprocess.run(
+                [prompt, "Read", str(config_path)],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.PIPE,
+                text=True,
+                timeout=5,
+            )
+        except Exception as err:
+            _stderr(f"FvwmPrompt fallback could not load ConfigFvwmTabs: {err}")
+        else:
+            if result.returncode == 0:
+                return True
+            detail = result.stderr.strip() or f"exit status {result.returncode}"
+            _stderr(f"FvwmPrompt fallback could not load ConfigFvwmTabs: {detail}")
+
+    fvwm_command = shutil.which("FvwmCommand")
+    if fvwm_command:
+        try:
+            result = subprocess.run(
+                [fvwm_command, command],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.PIPE,
+                text=True,
+                timeout=5,
+            )
+        except Exception as err:
+            _stderr(f"FvwmCommand fallback could not load ConfigFvwmTabs: {err}")
+        else:
+            if result.returncode == 0:
+                return True
+            detail = result.stderr.strip() or f"exit status {result.returncode}"
+            _stderr(f"FvwmCommand fallback could not load ConfigFvwmTabs: {detail}")
+
+    return False
+
+
+def _load_config(argv, config_path):
+    command = f"Read {_fvwm_quote(config_path)}"
+    write_fd = _module_write_fd(argv)
+    if write_fd is not None:
+        try:
+            _send_module_command(write_fd, command)
+            return True
+        except Exception as err:
+            _stderr(f"could not send FVWM Read command through module fd {write_fd}: {err}")
+    else:
+        _stderr("FVWM module file descriptor arguments were not present")
+
+    if _run_fallback(command, config_path):
+        return True
+
+    _stderr("ConfigFvwmTabs was not loaded; use FVWM 'Module FvwmTabs' or legacy 'Read ConfigFvwmTabs'")
+    return False
+
+
+def _start_server(client_path):
+    python = sys.executable or shutil.which("python3") or "python3"
+    try:
+        result = subprocess.run([python, str(client_path), "start"])
+    except Exception as err:
+        _stderr(f"could not run tabber_client.py start: {err}")
+        return False
+    if result.returncode != 0:
+        _stderr(f"tabber_client.py start exited with status {result.returncode}")
+        return False
+    return True
+
+
+def main(argv):
+    directory = _package_dir()
+    config_path = directory / "ConfigFvwmTabs"
+    client_path = directory / "tabber_client.py"
+
+    if not config_path.is_file():
+        _stderr(f"missing {config_path}")
+        return 1
+    if not client_path.is_file():
+        _stderr(f"missing {client_path}")
+        return 1
+
+    config_loaded = _load_config(argv, config_path)
+    server_started = _start_server(client_path)
+    return 0 if config_loaded and server_started else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv))
