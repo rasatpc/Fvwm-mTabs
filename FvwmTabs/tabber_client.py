@@ -8,7 +8,7 @@ import subprocess
 import sys
 import time
 
-STARTUP_TIMEOUT = 2.0
+STARTUP_TIMEOUT = 5.0
 STARTUP_RETRY_DELAY = 0.1
 
 
@@ -99,10 +99,10 @@ def _wait_for_server(timeout=STARTUP_TIMEOUT, delay=STARTUP_RETRY_DELAY):
 def _start_server():
     if _socket_available():
         return True
-    server_path = os.path.join(os.path.dirname(__file__), "FvwmTabs.py")
+    server_path = os.path.join(os.path.dirname(__file__), "FvwmTabs")
     try:
         subprocess.Popen(
-            [sys.executable, server_path],
+            [sys.executable, server_path, "--server"],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             start_new_session=True,
@@ -113,8 +113,7 @@ def _start_server():
     if _wait_for_server():
         return True
     print(
-        f"FvwmTabs: server did not answer on {SOCKET_PATH} after {STARTUP_TIMEOUT:.1f}s; "
-        "check ~/.fvwm/fvwmtabs.log",
+        f"FvwmTabs: server did not answer on {SOCKET_PATH} after {STARTUP_TIMEOUT:.1f}s",
         file=sys.stderr,
     )
     return False
@@ -144,6 +143,14 @@ def main():
         return 0 if _start_server() else 1
 
     line = _shlex_join(_normalize_args(sys.argv[1:]))
+    if sys.argv[1].lower() in {"quit", "stop"}:
+        line = "quit"
+        try:
+            _send_line(line)
+        except Exception:
+            pass
+        return 0
+
     try:
         _send_line(line)
         return 0
@@ -154,7 +161,7 @@ def main():
             return 0
         print(
             f"FvwmTabs: server did not answer on {SOCKET_PATH}; "
-            "check ~/.fvwm/fvwmtabs.log or remove stale .fvwmtabs-*.sock/.fvwmtabs-*.pid",
+            "remove stale .fvwmtabs-*.sock/.fvwmtabs-*.pid if FVWM is not running",
             file=sys.stderr,
         )
         return 1
