@@ -1,6 +1,4 @@
-FvwmTabs is a Python/Tk rewrite of the old Perl FVWM tabbing module. This
-keeps the socket/Tk design, multiple tabbers, FVWM command functions,
-assigned tabber IDs, right-click menu, and autoSwallow behavior.
+FvwmTabs is a Python/Tk rewrite of the old Perl FVWM tabbing module. This keeps the socket/Tk design, multiple tabbers, FVWM command functions, assigned tabber IDs, right-click menu, and autoSwallow behavior.
 
 The FVWM module is a single executable file:
 
