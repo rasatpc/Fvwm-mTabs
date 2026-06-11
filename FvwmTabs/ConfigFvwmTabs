@@ -6,15 +6,6 @@ DestroyFunc FvwmTabsStart
 AddToFunc FvwmTabsStart
 + I Exec exec python3 "$[FVWMTABS_DIR]/tabber_client.py" start
 
-DestroyFunc FvwmTabsShutdownHook
-AddToFunc FvwmTabsShutdownHook
-+ I Test (ToRestart) PipeRead 'python3 "$[FVWMTABS_DIR]/FvwmTabs" --fvwm-shutdown restart' quiet
-+ I Test (Quit) PipeRead 'python3 "$[FVWMTABS_DIR]/FvwmTabs" --fvwm-shutdown quit' quiet
-+ I Test (Quit) Exec exec python3 "$[FVWMTABS_DIR]/tabber_client.py" quit
-
-AddToFunc ExitFunction
-+ I Function FvwmTabsShutdownHook
-
 DestroyFunc NewTabber
 AddToFunc NewTabber
 + I Exec exec python3 "$[FVWMTABS_DIR]/tabber_client.py" createNewTabber $*
@@ -82,10 +73,6 @@ AddToFunc PrevTabId
 DestroyFunc QuitFvwmTabs
 AddToFunc QuitFvwmTabs
 + I Exec exec python3 "$[FVWMTABS_DIR]/tabber_client.py" quit
-
-DestroyFunc DumpAutoSwallow
-AddToFunc DumpAutoSwallow
-+ I Exec exec python3 "$[FVWMTABS_DIR]/tabber_client.py" dumpAutoSwallow
 
 # Root menu actions target the active tabber, falling back to tabber 1 inside
 # the Python server when no active tabber is known.

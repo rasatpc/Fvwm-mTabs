@@ -11,9 +11,9 @@
 ##		APPS		COMMAND			DESK/PAGE/SCREEN LOCATION
 ## --------------------------------------------------------------------
 
-Style	"FvwmTabs [0]"	StartsOnPage	0 0 0	# desk 0 page
-Style	"FvwmTabs [1]"	StartsOnPage	1 0 0	# desk 1 page
-# Style	"FvwmTabs [2]"	StartsOnPage	2 0 0	# desk 2 page
-Style	*Firefox 		StartsOnPage	0 0 0	# desk 0 page 
-Style	Gimp			StartsOnPage	2 0 0	# desk 2 page
-Style	scribus			StartsOnPage	2 0 0	# desk 2 page
+Style	"FvwmTabs [1]"	StartsOnPage	0 0 0	# desk 0 page
+Style	"FvwmTabs [2]"	StartsOnPage	1 0 0	# desk 1 page
+Style	"FvwmTabs [3]"	StartsOnPage	2 0 0	# desk 2 page
+# Style	*Firefox 		StartsOnPage	0 0 0	# desk 0 page 
+# Style	Gimp			StartsOnPage	2 0 0	# desk 2 page
+#Style	scribus			StartsOnPage	2 0 0	# desk 2 page

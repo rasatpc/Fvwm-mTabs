@@ -1,5 +1,5 @@
-## Functions: tile-edit-mon.sys
-## Tile, editor and monitor settings.
+## Functions: tile-edit.sys
+## Tile and editor settings.
 
 #####
 ## Vertical/horizontal tiling
@@ -39,26 +39,3 @@ Test (x leafpad) InfoStoreAdd EDT "Exec exec leafpad"
 Test (x gedit) InfoStoreAdd EDT "Exec exec gedit"
 Test (x mousepad) InfoStoreAdd EDT "Exec exec mousepad"
 Test (x featherpad) InfoStoreAdd EDT "Exec exec featherpad"
-
-### TEST Monitor
-
-#Exec exec xrandr --output HDMI-1 --off
-
-Exec exec sh $[HOME_DIR]/setup/aRandrStart.sh
-Exec exec sh $[HOME_DIR]/setup/xrandTest.sh
-
-DesktopConfiguration per-monitor
-
-DestroyFunc RandRFunc
-AddToFunc   RandRFunc
-#+ I Exec exec xmessage "Monitor $1 had this event: $0"
-
-DestroyModuleConfig FE-Monitor: *
-*FE-Monitor: monitor_changed RandRFunc
-*FE-Monitor: monitor_enabled RandRFunc
-
-KillModule FvwmEvent FE-Monitor
-Module FvwmEvent FE-Monitor
-
-# NOTE: For dual monitor, add below line in .fvwm/userExt.sys
-# Read $[CORE_DIR]/7Modules/VPager-hdmi.sys

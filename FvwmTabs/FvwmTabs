@@ -3,12 +3,10 @@
 
 import atexit
 import fnmatch
-import logging
 import os
 import queue
 import select
 import shlex
-import shutil
 import signal
 import socket
 import struct
@@ -48,9 +46,6 @@ AUTOSWALLOW_PROBE_COMMAND_TIMEOUT = 0.75
 XDO_COMMAND_TIMEOUT = 0.75
 SELECT_WINDOW_TIMEOUT = 5.0
 SERVER_CLIENT_TIMEOUT = 8.0
-FVWM_SHUTDOWN_MARKER_WAIT_SECONDS = 2.0
-FVWM_SHUTDOWN_MARKER_MAX_AGE_SECONDS = 30.0
-FVWM_DISCONNECT_CLEANUP_GRACE_SECONDS = 8.0
 RESIZE_DEBOUNCE_MS = 80
 QUEUE_DRAIN_LIMIT = 40
 QUEUE_DRAIN_BUDGET_SECONDS = 0.05
@@ -71,9 +66,8 @@ FVWMMFL_PROBES_PER_TICK = 1
 FVWMMFL_FAILED_PROBE_CACHE_TTL = 5.0
 CLIENT_LIST_CACHE_SECONDS = 1.0
 CLIENT_LIST_FORCE_MIN_INTERVAL_SECONDS = 0.5
-LOG_THROTTLE_SECONDS = 30
-TIMING_SLOW_MS = 100.0
 CLIENT_LIST_PROPERTIES = ("_NET_CLIENT_LIST", "_NET_CLIENT_LIST_STACKING")
+LOG_THROTTLE_SECONDS = 30
 
 # Tk color sets. The UI is intentionally small and toolkit-native; keep theme
 # edits conservative so existing FVWM desktops do not get a surprise redesign.
@@ -113,8 +107,6 @@ THEMES = {
 }
 
 _ROOT_WIN_ID = None
-_LOGGER = None
-_LAST_EXTERNAL_FAILURE_LOG = {}
 _LAST_CLIENT_LIST_UNAVAILABLE_LOG = 0.0
 
 
@@ -127,120 +119,14 @@ def _session_suffix():
 
 SOCKET_PATH = os.path.expanduser(f"~/.fvwm/.fvwmtabs-{_session_suffix()}.sock")
 PID_PATH = os.path.expanduser(f"~/.fvwm/.fvwmtabs-{_session_suffix()}.pid")
-LOG_PATH = os.path.expanduser(f"~/.fvwm/.fvwmtabs-{_session_suffix()}.log")
-FVWM_SHUTDOWN_PATH = os.path.expanduser(f"~/.fvwm/.fvwmtabs-{_session_suffix()}.shutdown")
 FVWM_MODULE_PATH = os.path.expanduser(f"~/.fvwm/.fvwmtabs-{_session_suffix()}.module")
 
 
-# Logging helpers
-
-def _setup_logging(enabled=False, debug=False, verbose=False):
-    global _LOGGER
-    logger = logging.getLogger("FvwmTabs")
-    logger.handlers[:] = []
-    logger.propagate = False
-    if not enabled and not debug and not verbose:
-        logger.setLevel(logging.CRITICAL + 1)
-        logger.addHandler(logging.NullHandler())
-        _LOGGER = logger
-        return logger
-
-    os.makedirs(os.path.dirname(LOG_PATH), exist_ok=True)
-    if debug:
-        level = logging.DEBUG
-    elif verbose:
-        level = logging.INFO
-    else:
-        level = logging.WARNING
-    logger.setLevel(level)
-    handler = logging.FileHandler(
-        LOG_PATH,
-        encoding="utf-8",
-        delay=True,
-    )
-    handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
-    handler.setLevel(level)
-    logger.addHandler(handler)
-    _LOGGER = logger
-    return logger
-
-
-def _log(level, message, *args):
-    if _LOGGER is not None:
-        _LOGGER.log(level, message, *args)
-
-
-def _log_external_failure(cmd, level, message, *args):
-    key = tuple(map(str, cmd))
-    now = time.monotonic()
-    last = _LAST_EXTERNAL_FAILURE_LOG.get(key)
-    if last is not None and now - last < LOG_THROTTLE_SECONDS:
-        return
-    _LAST_EXTERNAL_FAILURE_LOG[key] = now
-    _log(level, message, *args)
-
-
-def _format_timing_fields(fields):
-    parts = []
-    for key, value in fields.items():
-        if value is None:
-            continue
-        if isinstance(value, int) and key in {"win_id", "window_id"}:
-            value = "0x%x" % value
-        parts.append("%s=%r" % (key, value))
-    return " ".join(parts)
-
-
-def _log_timing(path, started, level=logging.DEBUG, slow_ms=TIMING_SLOW_MS, **fields):
-    elapsed_ms = (time.monotonic() - started) * 1000.0
-    rendered_fields = _format_timing_fields(fields)
-    if elapsed_ms >= slow_ms:
-        _log(logging.WARNING, "timing slow path=%s elapsed_ms=%.1f %s", path, elapsed_ms, rendered_fields)
-    else:
-        _log(level, "timing path=%s elapsed_ms=%.1f %s", path, elapsed_ms, rendered_fields)
-    return elapsed_ms
-
-
 def _run_capture(cmd, timeout=EXTERNAL_COMMAND_TIMEOUT):
-    started = time.monotonic()
-    status = "ok"
-    try:
-        return subprocess.check_output(cmd, text=True, stderr=subprocess.STDOUT, timeout=timeout)
-    except FileNotFoundError:
-        status = "not-found"
-        _log_external_failure(cmd, logging.ERROR, "external command not found: %s", cmd[0])
-        raise
-    except subprocess.TimeoutExpired as err:
-        status = "timeout"
-        output = (err.output or "").strip()
-        _log_external_failure(
-            cmd,
-            logging.WARNING,
-            "external command timed out after %.1fs cmd=%r output=%r",
-            timeout,
-            cmd,
-            output,
-        )
-        raise
-    except subprocess.CalledProcessError as err:
-        status = "failed"
-        output = (err.output or "").strip()
-        _log_external_failure(
-            cmd,
-            logging.WARNING,
-            "external command failed rc=%s cmd=%r output=%r",
-            err.returncode,
-            cmd,
-            output,
-        )
-        raise
-    finally:
-        _log_timing("external.capture", started, cmd=" ".join(map(str, cmd)), timeout=timeout, status=status)
+    return subprocess.check_output(cmd, text=True, stderr=subprocess.STDOUT, timeout=timeout)
 
 
 def _run_quiet(cmd, timeout=EXTERNAL_COMMAND_TIMEOUT):
-    started = time.monotonic()
-    status = "ok"
     try:
         result = subprocess.run(
             cmd,
@@ -250,90 +136,18 @@ def _run_quiet(cmd, timeout=EXTERNAL_COMMAND_TIMEOUT):
             check=False,
             timeout=timeout,
         )
-        if result.returncode != 0:
-            status = "failed"
-            _log_external_failure(
-                cmd,
-                logging.WARNING,
-                "external command failed rc=%s cmd=%r output=%r",
-                result.returncode,
-                cmd,
-                (result.stdout or "").strip(),
-            )
         return result.returncode == 0
     except FileNotFoundError:
-        status = "not-found"
-        _log_external_failure(cmd, logging.ERROR, "external command not found: %s", cmd[0])
+        pass
     except subprocess.TimeoutExpired as err:
-        status = "timeout"
-        output = (err.output or "").strip()
-        _log_external_failure(
-            cmd,
-            logging.WARNING,
-            "external command timed out after %.1fs cmd=%r output=%r",
-            timeout,
-            cmd,
-            output,
-        )
+        pass
     except Exception as err:
-        status = "error"
-        _log_external_failure(cmd, logging.WARNING, "external command error cmd=%r error=%s", cmd, err)
-    finally:
-        _log_timing("external.quiet", started, cmd=" ".join(map(str, cmd)), timeout=timeout, status=status)
+        pass
     return False
 
 
 def _xdo(*args):
     return _run_quiet(["xdotool", *map(str, args)], timeout=XDO_COMMAND_TIMEOUT)
-
-
-def _pid_file_is_current_process(path):
-    try:
-        with open(path, "r", encoding="utf-8") as handle:
-            return handle.read().strip() == str(os.getpid())
-    except Exception:
-        return False
-
-
-def _write_fvwm_shutdown_marker(mode):
-    mode = str(mode or "").strip().lower()
-    if mode not in {"restart", "quit"}:
-        return False
-    try:
-        os.makedirs(os.path.dirname(FVWM_SHUTDOWN_PATH), exist_ok=True)
-        tmp_path = f"{FVWM_SHUTDOWN_PATH}.{os.getpid()}.tmp"
-        with open(tmp_path, "w", encoding="utf-8") as handle:
-            handle.write(f"{mode} {time.time():.6f} {os.getpid()}\n")
-        os.replace(tmp_path, FVWM_SHUTDOWN_PATH)
-        return True
-    except Exception:
-        return False
-
-
-def _read_fvwm_shutdown_marker(max_age=FVWM_SHUTDOWN_MARKER_MAX_AGE_SECONDS):
-    try:
-        with open(FVWM_SHUTDOWN_PATH, "r", encoding="utf-8") as handle:
-            parts = handle.read().strip().split()
-    except Exception:
-        return None
-    if len(parts) < 2 or parts[0] not in {"restart", "quit"}:
-        return None
-    try:
-        marker_age = time.time() - float(parts[1])
-    except Exception:
-        return None
-    if marker_age < 0 or marker_age > max_age:
-        return None
-    return parts[0]
-
-
-def _clear_fvwm_shutdown_marker():
-    try:
-        os.unlink(FVWM_SHUTDOWN_PATH)
-    except FileNotFoundError:
-        pass
-    except Exception:
-        pass
 
 
 def _write_fvwm_module_token():
@@ -358,53 +172,6 @@ def _fvwm_module_token_changed(token):
     except Exception:
         return False
     return bool(current and current != token)
-
-
-def _clear_fvwm_module_token(token=None):
-    if token:
-        try:
-            with open(FVWM_MODULE_PATH, "r", encoding="utf-8") as handle:
-                if handle.read().strip() != token:
-                    return
-        except Exception:
-            return
-    try:
-        os.unlink(FVWM_MODULE_PATH)
-    except FileNotFoundError:
-        pass
-    except Exception:
-        pass
-
-
-def _schedule_server_cleanup_if_no_module_handoff(module_token):
-    try:
-        subprocess.Popen(
-            [
-                sys.executable or "python3",
-                os.path.abspath(__file__),
-                "--fvwm-cleanup-if-stale",
-                module_token or "",
-            ],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            start_new_session=True,
-        )
-    except Exception:
-        pass
-
-
-def _cleanup_if_stale_module_handoff(module_token):
-    time.sleep(FVWM_DISCONNECT_CLEANUP_GRACE_SECONDS)
-    if _fvwm_module_token_changed(module_token):
-        return 0
-    mode = _read_fvwm_shutdown_marker()
-    if mode == "restart":
-        _clear_fvwm_shutdown_marker()
-        return 0
-    _stop_server_client()
-    _clear_fvwm_shutdown_marker()
-    _clear_fvwm_module_token(module_token)
-    return 0
 
 
 # Configuration parsing
@@ -434,8 +201,7 @@ def _import_tkinter():
         import tkinter as tk_module
         from tkinter import simpledialog as simpledialog_module
     except ImportError as err:
-        _log(logging.ERROR, "Tkinter is required but could not be imported: %s", err)
-        print(f"FvwmTabs: Tkinter is required but could not be imported: {err}", file=sys.stderr)
+        _stderr(f"Tkinter is required but could not be imported: {err}")
         return False
     tk = tk_module
     simpledialog = simpledialog_module
@@ -451,14 +217,11 @@ def _parse_rule_list(value):
         try:
             pattern, tabber_id = item.rsplit(None, 1)
         except ValueError:
-            _log(logging.WARNING, "Invalid autoSwallow rule ignored: %s", item)
             continue
         if not pattern.strip():
-            _log(logging.WARNING, "Invalid autoSwallow rule ignored: %s", item)
             continue
         normalized_id = _normalize_tabber_id(tabber_id)
         if normalized_id is None:
-            _log(logging.WARNING, "Invalid autoSwallow rule ignored: %s", item)
             continue
         rules.append((pattern.strip(), normalized_id))
     return rules
@@ -467,15 +230,11 @@ def _parse_rule_list(value):
 def _load_config(path):
     config = {
         "theme": "black",
-        "debug": False,
-        "logging": False,
-        "verbose": False,
         "auto_swallow_on_startup": False,
         "auto_swallow_class": [],
         "auto_swallow_resource": [],
         "auto_swallow_name": [],
         "auto_create_assigned_tabber": False,
-        "unknown_keys": [],
     }
     if not os.path.exists(path):
         return config
@@ -493,12 +252,6 @@ def _load_config(path):
                     theme = value.lower()
                     if theme in THEMES:
                         config["theme"] = theme
-                elif key == "debug":
-                    config["debug"] = _parse_bool(value)
-                elif key == "logging":
-                    config["logging"] = _parse_bool(value)
-                elif key == "verbose":
-                    config["verbose"] = _parse_bool(value)
                 elif key == "autoSwallowOnStartup":
                     config["auto_swallow_on_startup"] = _parse_bool(value)
                 elif key == "autoSwallowClass":
@@ -511,10 +264,8 @@ def _load_config(path):
                     config["auto_swallow_name"].extend(_parse_rule_list(value))
                 elif key == "autoCreateAssignedTabber":
                     config["auto_create_assigned_tabber"] = _parse_bool(value)
-                else:
-                    config["unknown_keys"].append(key)
-    except Exception as err:
-        _log(logging.WARNING, "failed to load config %s: %s", path, err)
+    except Exception:
+        pass
     return config
 
 
@@ -555,6 +306,62 @@ def _get_window_geometry(win_id):
         return width, height
     except Exception:
         return None, None
+
+
+def _get_frame_top_extent(win_id):
+    # Read _NET_FRAME_EXTENTS (left, right, top, bottom) and return top (the
+    # WM titlebar height). Returns 0 if the property is absent or unreadable.
+    try:
+        out = _run_capture(
+            ["xprop", "-id", str(win_id), "_NET_FRAME_EXTENTS"],
+            timeout=XDO_COMMAND_TIMEOUT,
+        )
+    except Exception:
+        return 0
+    for line in out.splitlines():
+        if "_NET_FRAME_EXTENTS" not in line or "=" not in line:
+            continue
+        lowered = line.lower()
+        if "not found" in lowered or "no such atom" in lowered:
+            return 0
+        try:
+            parts = [int(p.strip()) for p in line.split("=", 1)[1].split(",")]
+            # EWMH order: left, right, top, bottom
+            if len(parts) >= 3:
+                return max(0, parts[2])
+        except Exception:
+            return 0
+    return 0
+
+
+def _get_window_geometry_string(win_id):
+    # Build a Tk geometry string ("WxH+X+Y") from a window's live X11 geometry.
+    # Used to seed an auto-created tabber with its target window's position so
+    # Fvwm does not place the geometry-less tabber at a default location and let
+    # it visibly jump before the window is swallowed. Returns None when the
+    # geometry cannot be read so callers fall back to the default placement.
+    try:
+        out = _run_capture(["xdotool", "getwindowgeometry", "--shell", str(win_id)], timeout=XDO_COMMAND_TIMEOUT)
+        data = {}
+        for line in out.splitlines():
+            if "=" in line:
+                key, value = line.strip().split("=", 1)
+                data[key] = value
+        width = int(data["WIDTH"])
+        height = int(data["HEIGHT"])
+        x = int(data["X"])
+        y = int(data["Y"])
+    except Exception:
+        return None
+    if width <= 0 or height <= 0:
+        return None
+    # xdotool reports Y from the client area; Fvwm places the tabber frame
+    # (including titlebar) at that Y, so subtract the WM top decoration height
+    # so the tabber appears exactly where the target window's client area began.
+    y -= _get_frame_top_extent(win_id)
+    # The :+d sign keeps off-screen (negative) offsets valid as Tk geometry,
+    # e.g. "1241x752+100+50" or "1241x752-5+50".
+    return f"{width}x{height}{x:+d}{y:+d}"
 
 
 def _xprop_key(raw):
@@ -598,7 +405,6 @@ def _parse_xprop_window(raw):
 # X11 identity parsing
 
 def _get_window_identity(win_id, timeout=EXTERNAL_COMMAND_TIMEOUT):
-    started = time.monotonic()
     identity = {
         "id": win_id,
         "resource": "",
@@ -660,16 +466,6 @@ def _get_window_identity(win_id, timeout=EXTERNAL_COMMAND_TIMEOUT):
             identity["probe_failed"] = True
             identity["name"] = ""
 
-    _log_timing(
-        "x11.identity",
-        started,
-        win_id=win_id,
-        probe_failed=identity["probe_failed"],
-        probe_timeout=identity["probe_timeout"],
-        resource=identity["resource"],
-        class_name=identity["class"],
-        name=identity["name"],
-    )
     return identity
 
 
@@ -705,16 +501,11 @@ def _matches_pattern(pattern, value):
 
 
 def _window_exists(win_id):
-    started = time.monotonic()
-    exists = False
     try:
         _run_capture(["xdotool", "getwindowname", str(win_id)], timeout=XDO_COMMAND_TIMEOUT)
-        exists = True
         return True
     except Exception:
         return False
-    finally:
-        _log_timing("x11.window_exists", started, win_id=win_id, exists=exists)
 
 
 def _select_window():
@@ -748,11 +539,6 @@ def _log_client_list_unavailable():
     if now - _LAST_CLIENT_LIST_UNAVAILABLE_LOG < LOG_THROTTLE_SECONDS:
         return
     _LAST_CLIENT_LIST_UNAVAILABLE_LOG = now
-    _log(
-        logging.WARNING,
-        "autoSwallow cannot read client windows: neither _NET_CLIENT_LIST nor "
-        "_NET_CLIENT_LIST_STACKING is available",
-    )
 
 
 def _client_snapshot_available(details):
@@ -760,7 +546,6 @@ def _client_snapshot_available(details):
 
 
 def _get_client_window_snapshot():
-    started = time.monotonic()
     details = {
         prop: {"available": False, "windows": set(), "raw": ""}
         for prop in CLIENT_LIST_PROPERTIES
@@ -772,7 +557,6 @@ def _get_client_window_snapshot():
         )
     except subprocess.TimeoutExpired:
         _log_client_list_unavailable()
-        _log_timing("x11.client_snapshot", started, available=False, windows=0, status="timeout")
         return set(), details
     except Exception:
         chunks = []
@@ -786,7 +570,6 @@ def _get_client_window_snapshot():
                 pass
         if not chunks:
             _log_client_list_unavailable()
-            _log_timing("x11.client_snapshot", started, available=False, windows=0, status="unavailable")
             return set(), details
         out = "\n".join(chunks)
 
@@ -813,13 +596,6 @@ def _get_client_window_snapshot():
     if not any(prop_details["available"] for prop_details in details.values()):
         _log_client_list_unavailable()
 
-    _log_timing(
-        "x11.client_snapshot",
-        started,
-        available=any(prop_details["available"] for prop_details in details.values()),
-        windows=len(windows),
-        status="ok",
-    )
     return windows, details
 
 
@@ -829,14 +605,11 @@ def _list_client_windows():
 
 
 def _list_existing_x_windows(timeout=CLIENT_LIST_COMMAND_TIMEOUT):
-    started = time.monotonic()
     try:
         out = _run_capture(["xwininfo", "-root", "-tree"], timeout=timeout)
     except Exception:
-        _log_timing("x11.window_tree", started, available=False, windows=0)
         return None
     windows = _extract_window_ids(out)
-    _log_timing("x11.window_tree", started, available=True, windows=len(windows))
     return windows
 
 
@@ -869,13 +642,6 @@ class WindowWatcher(threading.Thread):
             if not _client_snapshot_available(details):
                 elapsed = time.monotonic() - started
                 self.interval = min(self.max_interval, max(self.min_interval, self.interval * self.backoff_factor))
-                _log_timing(
-                    "watcher.client_list_poll",
-                    started,
-                    available=False,
-                    interval=round(self.interval, 3),
-                    wait=round(max(WATCH_MIN_SLEEP, self.interval - elapsed), 3),
-                )
                 self.stop_event.wait(max(WATCH_MIN_SLEEP, self.interval - elapsed))
                 continue
 
@@ -890,17 +656,6 @@ class WindowWatcher(threading.Thread):
             self.details = details
             elapsed = time.monotonic() - started
             wait_seconds = max(WATCH_MIN_SLEEP, self.interval - elapsed)
-            _log_timing(
-                "watcher.client_list_poll",
-                started,
-                available=True,
-                changed=bool(new_windows or removed_windows),
-                windows=len(current),
-                new=len(new_windows),
-                removed=len(removed_windows),
-                interval=round(self.interval, 3),
-                wait=round(wait_seconds, 3),
-            )
             self.stop_event.wait(wait_seconds)
 
 
@@ -1039,7 +794,6 @@ class Tabber:
             )
 
     def activate(self):
-        started = time.monotonic()
         self._mark_active("activate")
         try:
             self.top.deiconify()
@@ -1048,8 +802,6 @@ class Tabber:
             self.top.update_idletasks()
         except Exception:
             pass
-        finally:
-            _log_timing("tabber.activate", started, tabber_id=self.tabber_id)
 
     def _parent_id(self):
         self.top.update_idletasks()
@@ -1083,11 +835,7 @@ class Tabber:
 
     def _focus_window(self, win_id):
         raised = _xdo("windowraise", win_id)
-        if not raised:
-            _log(logging.WARNING, "window raise failed tabber=%s win=0x%x", self.tabber_id, win_id)
         focused = _xdo("windowfocus", win_id)
-        if not focused:
-            _log(logging.WARNING, "window focus failed tabber=%s win=0x%x", self.tabber_id, win_id)
         return raised and focused
 
     def _set_outer_geometry(self, width, height):
@@ -1106,9 +854,7 @@ class Tabber:
         self._set_outer_geometry(width, height)
 
     def remove_missing_windows(self, existing_windows):
-        started = time.monotonic()
         if existing_windows is None:
-            _log_timing("tabber.remove_missing_windows", started, tabber_id=self.tabber_id, tabs=len(self.tabs), dead=0, skipped=True)
             return 0
         dead = []
         for index, tab in enumerate(self.tabs):
@@ -1116,7 +862,6 @@ class Tabber:
                 dead.append(index)
         for index in reversed(dead):
             self._remove_tab(index, release=False)
-        _log_timing("tabber.remove_missing_windows", started, tabber_id=self.tabber_id, tabs=len(self.tabs), dead=len(dead))
         return len(dead)
 
     def _dismiss_menu(self, _event=None):
@@ -1248,38 +993,29 @@ class Tabber:
         return frame, button, close_button
 
     def add_window(self, win_id, title):
-        started = time.monotonic()
         for existing in self.tabs:
             if existing.win_id == win_id:
-                result = self.select_by_id(win_id)
-                _log_timing("tabber.add_window", started, tabber_id=self.tabber_id, win_id=win_id, duplicate=True, result=result)
+                self.select_by_id(win_id)
                 return True
 
         width, height = _get_window_geometry(win_id)
         parent_id = self._parent_id()
         self.activate()
         if not _xdo("windowreparent", win_id, parent_id):
-            _log(logging.ERROR, "window reparent failed tabber=%s win=0x%x parent=0x%x", self.tabber_id, win_id, parent_id)
-            _log_timing("tabber.add_window", started, tabber_id=self.tabber_id, win_id=win_id, result=False, stage="reparent")
             return False
 
         frame, button, close_button = self._tab_frame(title, win_id)
         tab = Tab(win_id, title or str(win_id), frame, button, close_button, width=width, height=height)
         self.tabs.append(tab)
 
-        if not _xdo("windowmap", win_id):
-            _log(logging.WARNING, "window map failed after reparent tabber=%s win=0x%x", self.tabber_id, win_id)
+        _xdo("windowmap", win_id)
 
         self._apply_theme_to_tabs()
         self.top.update_idletasks()
         if not self.select_index(len(self.tabs) - 1):
-            _log(logging.ERROR, "window select failed after reparent tabber=%s win=0x%x", self.tabber_id, win_id)
             self._rollback_add_window(tab)
-            _log_timing("tabber.add_window", started, tabber_id=self.tabber_id, win_id=win_id, result=False, stage="select")
             return False
 
-        _log(logging.INFO, "window added tabber=%s win=0x%x title=%r", self.tabber_id, win_id, tab.title)
-        _log_timing("tabber.add_window", started, tabber_id=self.tabber_id, win_id=win_id, result=True, tabs=len(self.tabs))
         return True
 
     def _rollback_add_window(self, tab):
@@ -1308,29 +1044,21 @@ class Tabber:
         return False
 
     def select_index(self, idx):
-        started = time.monotonic()
         if idx < 0 or idx >= len(self.tabs):
-            _log_timing("tabber.select_index", started, tabber_id=self.tabber_id, idx=idx, result=False, reason="out-of-range")
             return False
 
         if self.current is not None and self.current != idx and self.current < len(self.tabs):
             old = self.tabs[self.current].win_id
-            if not _xdo("windowunmap", old):
-                _log(logging.WARNING, "window unmap failed tabber=%s win=0x%x", self.tabber_id, old)
+            _xdo("windowunmap", old)
 
         self.current = idx
         tab = self.tabs[idx]
         self.activate()
         self._resize_outer_for_tab(tab)
-        mapped = _xdo("windowmap", tab.win_id)
-        if not mapped:
-            _log(logging.WARNING, "window map failed during select tabber=%s win=0x%x", self.tabber_id, tab.win_id)
-        resized = self._resize_window(tab.win_id)
-        if not resized:
-            _log(logging.WARNING, "window resize failed during select tabber=%s win=0x%x", self.tabber_id, tab.win_id)
+        _xdo("windowmap", tab.win_id)
+        self._resize_window(tab.win_id)
         self._focus_window(tab.win_id)
         self._apply_theme_to_tabs()
-        _log_timing("tabber.select_index", started, tabber_id=self.tabber_id, idx=idx, win_id=tab.win_id, result=True)
         return True
 
     def next_tab(self):
@@ -1374,13 +1102,9 @@ class Tabber:
                 self.on_window_released(tab.win_id, "manual-release")
             root_id = _get_root_window_id()
             if root_id is not None:
-                if not _xdo("windowunmap", tab.win_id):
-                    _log(logging.WARNING, "window unmap before release failed tabber=%s win=0x%x", self.tabber_id, tab.win_id)
-                if not _xdo("windowreparent", tab.win_id, root_id):
-                    _log(logging.WARNING, "window reparent release failed tabber=%s win=0x%x root=0x%x", self.tabber_id, tab.win_id, root_id)
-                if not _xdo("windowmap", tab.win_id):
-                    _log(logging.WARNING, "window map after release failed tabber=%s win=0x%x", self.tabber_id, tab.win_id)
-        _log(logging.INFO, "window %s tabber=%s win=0x%x title=%r", "released" if release else "removed", self.tabber_id, tab.win_id, tab.title)
+                _xdo("windowunmap", tab.win_id)
+                _xdo("windowreparent", tab.win_id, root_id)
+                _xdo("windowmap", tab.win_id)
 
         try:
             tab.frame.destroy()
@@ -1404,11 +1128,8 @@ class Tabber:
                 return
 
     def kill_tab(self, win_id):
-        _log(logging.INFO, "window killed tabber=%s win=0x%x", self.tabber_id, win_id)
         if not _xdo("windowkill", win_id):
-            _log(logging.WARNING, "window kill failed tabber=%s win=0x%x; trying windowclose", self.tabber_id, win_id)
-            if not _xdo("windowclose", win_id):
-                _log(logging.WARNING, "window close fallback failed tabber=%s win=0x%x", self.tabber_id, win_id)
+            _xdo("windowclose", win_id)
         for idx, tab in enumerate(self.tabs):
             if tab.win_id == win_id:
                 self._remove_tab(idx, release=False)
@@ -1448,18 +1169,12 @@ class Tabber:
 class FvwmTabsServer:
     def __init__(self):
         self.config = _load_config(CONFIG_PATH)
-        self.logger = _setup_logging(
-            enabled=self.config["logging"],
-            debug=self.config["debug"],
-            verbose=self.config["verbose"],
-        )
         if not _import_tkinter():
             raise SystemExit(1)
         display = os.environ.get("DISPLAY", ":0")
         try:
             self.root = tk.Tk()
         except Exception as err:
-            _log(logging.CRITICAL, "fatal: cannot open display %r: %s", display, err)
             print(f"FvwmTabs: cannot open display {display!r}: {err}", file=sys.stderr)
             raise SystemExit(1)
         self.root.withdraw()
@@ -1518,36 +1233,9 @@ class FvwmTabsServer:
         self._cleanup_done = False
         self._setup_fvwmmfl_client()
         self._install_signal_handlers()
-        self._log_startup()
-
-    def _log_startup(self):
-        _log(logging.INFO, "%s starting", VERSION_LABEL)
-        _log(logging.INFO, "config=%s socket=%s pid=%s log=%s", CONFIG_PATH, SOCKET_PATH, PID_PATH, LOG_PATH)
-        _log(
-            logging.INFO,
-            "config loaded theme=%s logging=%s verbose=%s debug=%s startup_scan=%s class_rules=%d resource_rules=%d name_rules=%d",
-            self.default_theme,
-            self.config["logging"],
-            self.config["verbose"],
-            self.config["debug"],
-            self.auto_swallow_on_startup,
-            len(self.auto_swallow_class),
-            len(self.auto_swallow_resource),
-            len(self.auto_swallow_name),
-        )
-        if self.config["debug"]:
-            for key in self.config["unknown_keys"]:
-                _log(logging.DEBUG, "unknown config key ignored: %s", key)
-        if self._autoswallow_rules_configured():
-            _log(logging.INFO, "autoSwallow rules configured %s", self._format_autoswallow_rules())
-        if self.fvwmmfl_client is not None:
-            _log(logging.INFO, "FvwmMFL integration enabled")
-        else:
-            _log(logging.INFO, "FvwmMFL integration unavailable; using xprop polling only")
 
     def _setup_queue_wakeup(self):
         if not hasattr(self.root, "createfilehandler"):
-            _log(logging.INFO, "Tk filehandler unavailable; queue drain will use adaptive timer polling")
             return
         try:
             read_fd, write_fd = os.pipe()
@@ -1555,7 +1243,6 @@ class FvwmTabsServer:
             os.set_blocking(write_fd, False)
             self.root.createfilehandler(read_fd, tk.READABLE, self._on_queue_wake)
         except Exception as err:
-            _log(logging.WARNING, "Tk queue wakeup pipe unavailable; using adaptive timer polling: %s", err)
             for fd in (locals().get("read_fd"), locals().get("write_fd")):
                 if fd is None:
                     continue
@@ -1567,15 +1254,9 @@ class FvwmTabsServer:
         self._queue_wake_read = read_fd
         self._queue_wake_write = write_fd
         self._queue_wake_filehandler = True
-        _log(logging.INFO, "Tk queue wakeup uses filehandler fd=%s", read_fd)
 
     def _close_queue_wakeup(self):
-        if self._queue_drain_job is not None:
-            try:
-                self.root.after_cancel(self._queue_drain_job)
-            except Exception:
-                pass
-            self._queue_drain_job = None
+        self._cancel_after_job("_queue_drain_job")
         if self._queue_wake_filehandler and self._queue_wake_read is not None:
             try:
                 self.root.deletefilehandler(self._queue_wake_read)
@@ -1645,14 +1326,11 @@ class FvwmTabsServer:
 
     def _setup_fvwmmfl_client(self):
         if FvwmMFLClient is None:
-            _log(logging.WARNING, "FvwmMFL client module could not be imported")
             return
-        client = FvwmMFLClient(logger=self.logger)
+        client = FvwmMFLClient(logger=None)
         if not client.configured():
-            _log(logging.INFO, "FvwmMFL socket not explicitly configured; using xprop polling only")
             return
         if not client.can_connect():
-            _log(logging.WARNING, "FvwmMFL socket configured but unavailable; using xprop polling only")
             return
         self.fvwmmfl_client = client
 
@@ -1694,11 +1372,6 @@ class FvwmTabsServer:
             self._queue_fvwmmfl_event,
             stop_event=self._stop_event,
         )
-        _log(
-            logging.INFO,
-            "FvwmMFL autoSwallow event listener requested events=%s",
-            ",".join(FVWMMFL_AUTOSWALLOW_EVENTS),
-        )
 
     def _queue_fvwmmfl_event(self, packet):
         if extract_event_window_id is not None:
@@ -1709,7 +1382,6 @@ class FvwmTabsServer:
                 last = self._last_queued_fvwmmfl_events.get(key)
                 self._last_queued_fvwmmfl_events[key] = now
                 if last is not None and now - last < FVWMMFL_QUEUE_DEBOUNCE_SECONDS:
-                    _log(logging.DEBUG, "FvwmMFL event ignored before queue event=%s win=0x%x reason=queued-debounce", event_name, win_id)
                     return
                 self._enqueue("fvwmmfl_event", (event_name, win_id, packet))
                 return
@@ -1725,7 +1397,6 @@ class FvwmTabsServer:
                 test = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
                 test.connect(SOCKET_PATH)
                 test.close()
-                _log(logging.INFO, "socket already active; exiting duplicate server")
                 sys.exit(0)
             except Exception:
                 try:
@@ -1736,7 +1407,6 @@ class FvwmTabsServer:
         self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         self.sock.bind(SOCKET_PATH)
         self.sock.listen(32)
-        _log(logging.INFO, "socket listening: %s", SOCKET_PATH)
 
         with open(PID_PATH, "w", encoding="utf-8") as handle:
             handle.write(str(os.getpid()))
@@ -1744,20 +1414,37 @@ class FvwmTabsServer:
         atexit.register(self._cleanup)
         threading.Thread(target=self._accept_loop, daemon=True).start()
 
+    def _cancel_after_job(self, attr):
+        job = getattr(self, attr, None)
+        if job is not None:
+            try:
+                self.root.after_cancel(job)
+            except Exception:
+                pass
+            setattr(self, attr, None)
+
+    def _do_destroy_tabber(self, tabber_id, cmd_name):
+        tabber = self.tabbers.pop(tabber_id, None)
+        if tabber:
+            tabber.on_destroy = None
+            tabber.destroy()
+            if self.active_tabber_id == tabber_id:
+                self.active_tabber_id = None
+
     def _cleanup(self):
         if self._cleanup_done:
             return
         self._cleanup_done = True
         # Prevent a second SIGTERM (from session manager during logout) from
-        # raising SystemExit inside this method and aborting file removal.
+        # raising SystemExit inside this method and aborting window release.
         for _sig in (signal.SIGINT, signal.SIGTERM, signal.SIGHUP):
             try:
                 signal.signal(_sig, signal.SIG_IGN)
             except Exception:
                 pass
-        # Shutdown should release windows back to root and remove only our own
-        # socket/PID files. Opt-in logs are kept for troubleshooting.
-        _log(logging.INFO, "server cleanup started")
+        # Shutdown releases windows back to root and closes in-process
+        # resources. Runtime files are left for the next startup to reuse or
+        # replace.
         self._stop_event.set()
         self._close_queue_wakeup()
         for job in list(self._pending_autoswallow.values()):
@@ -1766,12 +1453,7 @@ class FvwmTabsServer:
             except Exception:
                 pass
         self._pending_autoswallow.clear()
-        if self._fvwmmfl_probe_job is not None:
-            try:
-                self.root.after_cancel(self._fvwmmfl_probe_job)
-            except Exception:
-                pass
-            self._fvwmmfl_probe_job = None
+        self._cancel_after_job("_fvwmmfl_probe_job")
         self._fvwmmfl_pending_probes.clear()
         self._fvwmmfl_in_progress.clear()
         self._fvwmmfl_nonclient_seen.clear()
@@ -1779,30 +1461,8 @@ class FvwmTabsServer:
         self._client_list_cache = None
         self._client_list_cache_details = None
         self._client_list_cache_at = 0.0
-        if self._startup_scan_job is not None:
-            try:
-                self.root.after_cancel(self._startup_scan_job)
-            except Exception:
-                pass
-            self._startup_scan_job = None
-        if self._first_tabber_scan_job is not None:
-            try:
-                self.root.after_cancel(self._first_tabber_scan_job)
-            except Exception:
-                pass
-            self._first_tabber_scan_job = None
-        if self._fallback_scan_job is not None:
-            try:
-                self.root.after_cancel(self._fallback_scan_job)
-            except Exception:
-                pass
-            self._fallback_scan_job = None
-        if self._tabbed_window_sweep_job is not None:
-            try:
-                self.root.after_cancel(self._tabbed_window_sweep_job)
-            except Exception:
-                pass
-            self._tabbed_window_sweep_job = None
+        for _attr in ("_startup_scan_job", "_first_tabber_scan_job", "_fallback_scan_job", "_tabbed_window_sweep_job"):
+            self._cancel_after_job(_attr)
         self._autoswallow_seen.clear()
         self._autoswallow_suppressed.clear()
         for tabber in list(self.tabbers.values()):
@@ -1815,34 +1475,6 @@ class FvwmTabsServer:
         try:
             if self.sock:
                 self.sock.close()
-        except Exception:
-            pass
-        try:
-            if os.path.exists(SOCKET_PATH):
-                os.unlink(SOCKET_PATH)
-        except Exception:
-            pass
-        try:
-            if os.path.exists(PID_PATH) and _pid_file_is_current_process(PID_PATH):
-                os.unlink(PID_PATH)
-        except Exception:
-            pass
-        try:
-            if os.path.exists(FVWM_MODULE_PATH):
-                os.unlink(FVWM_MODULE_PATH)
-        except Exception:
-            pass
-        try:
-            pycache_dir = os.path.join(MODULE_DIR, "__pycache__")
-            if os.path.isdir(pycache_dir):
-                shutil.rmtree(pycache_dir, ignore_errors=True)
-        except Exception:
-            pass
-        try:
-            logger = logging.getLogger("FvwmTabs")
-            for handler in list(logger.handlers):
-                logger.removeHandler(handler)
-                handler.close()
         except Exception:
             pass
 
@@ -1914,7 +1546,6 @@ class FvwmTabsServer:
             self._draining_queue = False
 
         remaining = self.queue.qsize()
-        _log_timing("server.drain_queue", started, handled=handled, remaining=remaining)
         if self._stop_event.is_set():
             return
         if remaining:
@@ -1936,10 +1567,8 @@ class FvwmTabsServer:
                 return
             event_name, win_id = extract_event_window_id(packet)
         if not event_name:
-            _log(logging.DEBUG, "FvwmMFL event ignored packet=%r", packet)
             return
         if win_id is None:
-            _log(logging.DEBUG, "FvwmMFL event has no window id event=%s packet=%r", event_name, packet)
             return
 
         source = f"fvwmmfl:{event_name}"
@@ -1952,13 +1581,10 @@ class FvwmTabsServer:
         if self._ignore_fvwmmfl_client_event(event_name, win_id, source):
             return
         if self._is_fvwmmfl_nonclient_cached(win_id):
-            _log(logging.DEBUG, "FvwmMFL event ignored source=%s win=0x%x reason=recent-nonclient", source, win_id)
             return
-        _log(logging.INFO, "FvwmMFL event received event=%s win=0x%x", event_name, win_id)
         self._queue_fvwmmfl_probe(event_name, win_id, source)
 
     def _handle_fvwmmfl_destroy_event(self, win_id, source):
-        _log(logging.INFO, "FvwmMFL event received event=destroy_window win=0x%x", win_id)
         self._known_windows.discard(win_id)
         self._cancel_pending_fvwmmfl_probe(win_id)
         self._cancel_pending_autoswallow(win_id)
@@ -1975,16 +1601,12 @@ class FvwmTabsServer:
             return
         is_fvwmmfl_source = self._is_fvwmmfl_autoswallow_source(source)
         if win_id in self._pending_autoswallow:
-            _log(logging.DEBUG, "autoSwallow probe ignored source=%s win=0x%x reason=retry-pending", source, win_id)
             return
         if is_fvwmmfl_source and self._is_fvwmmfl_failed_probe_cached(win_id):
-            _log(logging.DEBUG, "FvwmMFL event ignored source=%s win=0x%x reason=recent-probe-timeout", source, win_id)
             return
         if is_fvwmmfl_source and self._is_fvwmmfl_nonclient_cached(win_id):
-            _log(logging.DEBUG, "FvwmMFL event ignored source=%s win=0x%x reason=recent-nonclient", source, win_id)
             return
         if win_id in self._fvwmmfl_in_progress:
-            _log(logging.DEBUG, "autoSwallow probe ignored source=%s win=0x%x reason=probe-in-progress", source, win_id)
             return
 
         item = self._fvwmmfl_pending_probes.get(win_id)
@@ -1996,10 +1618,6 @@ class FvwmTabsServer:
                 "retries_left": retries_left,
                 "client_list_snapshot_at": client_list_snapshot_at,
             }
-            if is_fvwmmfl_source:
-                _log(logging.DEBUG, "FvwmMFL event queued source=%s win=0x%x", source, win_id)
-            else:
-                _log(logging.DEBUG, "autoSwallow probe queued source=%s win=0x%x", source, win_id)
         else:
             item["events"].add(event_name)
             item["source"] = self._merge_probe_source(item, source)
@@ -2008,10 +1626,6 @@ class FvwmTabsServer:
                 previous_snapshot_at = item.get("client_list_snapshot_at")
                 if previous_snapshot_at is None or client_list_snapshot_at > previous_snapshot_at:
                     item["client_list_snapshot_at"] = client_list_snapshot_at
-            if is_fvwmmfl_source:
-                _log(logging.DEBUG, "FvwmMFL event coalesced source=%s win=0x%x", source, win_id)
-            else:
-                _log(logging.DEBUG, "autoSwallow probe coalesced source=%s win=0x%x", source, win_id)
         self._schedule_fvwmmfl_probe_drain()
 
     def _schedule_fvwmmfl_probe_drain(self, delay_ms=None):
@@ -2026,14 +1640,11 @@ class FvwmTabsServer:
         self._fvwmmfl_probe_job = self.root.after(delay_ms, self._drain_fvwmmfl_probes)
 
     def _drain_fvwmmfl_probes(self):
-        started = time.monotonic()
         self._fvwmmfl_probe_job = None
         if self._stop_event.is_set() or not self._autoswallow_rules_configured():
             self._fvwmmfl_pending_probes.clear()
-            _log_timing("autoswallow.drain_probes", started, processed=0, pending=0, reason="disabled")
             return
         if not self._fvwmmfl_pending_probes:
-            _log_timing("autoswallow.drain_probes", started, processed=0, pending=0, reason="empty")
             return
 
         processed = 0
@@ -2043,20 +1654,16 @@ class FvwmTabsServer:
             if self._is_fvwmmfl_autoswallow_source(source) and self._is_fvwmmfl_failed_probe_cached(win_id):
                 self._pop_next_fvwmmfl_probe()
                 processed += 1
-                _log(logging.DEBUG, "FvwmMFL probe skipped source=%s win=0x%x reason=recent-probe-timeout", source, win_id)
                 continue
             if win_id in self._pending_autoswallow:
                 self._pop_next_fvwmmfl_probe()
                 processed += 1
-                _log(logging.DEBUG, "autoSwallow probe skipped source=%s win=0x%x reason=retry-pending", source, win_id)
                 continue
 
             min_snapshot_at = item.get("client_list_snapshot_at") or item.get("queued_at", 0.0)
             current, details, _snapshot_at = self._get_cached_client_window_snapshot(min_refreshed_at=min_snapshot_at)
             if not self._client_window_snapshot_available(details):
-                _log(logging.DEBUG, "FvwmMFL probe drain deferred reason=client-list-unavailable pending=%d", len(self._fvwmmfl_pending_probes))
                 self._schedule_fvwmmfl_probe_drain(int(FVWMMFL_FAILED_PROBE_CACHE_TTL * 1000))
-                _log_timing("autoswallow.drain_probes", started, processed=processed, pending=len(self._fvwmmfl_pending_probes), reason="client-list-unavailable")
                 return
             removed_windows = self._known_windows - current
             self._known_windows = current
@@ -2069,14 +1676,10 @@ class FvwmTabsServer:
             if win_id not in current:
                 if self._is_fvwmmfl_autoswallow_source(source):
                     self._mark_fvwmmfl_nonclient(win_id)
-                    _log(logging.DEBUG, "FvwmMFL event window not in client list yet source=%s win=0x%x", source, win_id)
-                else:
-                    _log(logging.DEBUG, "autoSwallow probe window not in client list source=%s win=0x%x", source, win_id)
                 continue
 
             self._fvwmmfl_nonclient_seen.pop(win_id, None)
             self._last_window_detection = time.monotonic()
-            _log(logging.INFO, "autoSwallow new client window detected source=%s win=0x%x", source, win_id)
             self._fvwmmfl_in_progress.add(win_id)
             try:
                 self._handle_new_window(
@@ -2089,7 +1692,6 @@ class FvwmTabsServer:
 
         if self._fvwmmfl_pending_probes:
             self._schedule_fvwmmfl_probe_drain(FVWMMFL_PROBE_DRAIN_MS)
-        _log_timing("autoswallow.drain_probes", started, processed=processed, pending=len(self._fvwmmfl_pending_probes))
 
     def _peek_next_fvwmmfl_probe(self):
         win_id = self._next_fvwmmfl_probe_id()
@@ -2130,39 +1732,30 @@ class FvwmTabsServer:
         last = self._last_fvwmmfl_events.get(key)
         self._last_fvwmmfl_events[key] = now
         if last is not None and now - last < FVWMMFL_EVENT_DEBOUNCE_SECONDS:
-            _log(logging.DEBUG, "FvwmMFL event ignored source=%s win=0x%x reason=debounced", source, win_id)
             return True
 
         if event_name in {"new_window", "map"}:
             if win_id in self._fvwmmfl_pending_probes:
-                _log(logging.DEBUG, "FvwmMFL event ignored source=%s win=0x%x reason=probe-queued", source, win_id)
                 return True
             if win_id in self._fvwmmfl_in_progress:
-                _log(logging.DEBUG, "FvwmMFL event ignored source=%s win=0x%x reason=probe-in-progress", source, win_id)
                 return True
             if win_id in self._pending_autoswallow:
-                _log(logging.DEBUG, "FvwmMFL event ignored source=%s win=0x%x reason=retry-pending", source, win_id)
                 return True
             if self._is_fvwmmfl_failed_probe_cached(win_id):
-                _log(logging.DEBUG, "FvwmMFL event ignored source=%s win=0x%x reason=recent-probe-timeout", source, win_id)
                 return True
 
         # FvwmMFL can report map activity while FVWM is moving/resizing a normal
         # already-known client. Do not let those map storms schedule fresh
         # xprop/xwininfo/xdotool probes from the Tk thread.
         if event_name == "map" and win_id in self._known_windows:
-            _log(logging.DEBUG, "FvwmMFL event ignored source=%s win=0x%x reason=known-map", source, win_id)
             return True
 
         if event_name == "new_window" and win_id in self._known_windows:
             if self._is_autoswallow_seen(win_id):
-                _log(logging.DEBUG, "FvwmMFL event ignored source=%s win=0x%x reason=already-inspected", source, win_id)
                 return True
             if win_id in self._pending_autoswallow:
-                _log(logging.DEBUG, "FvwmMFL event ignored source=%s win=0x%x reason=retry-pending", source, win_id)
                 return True
             if self._is_internal_window(win_id):
-                _log(logging.DEBUG, "FvwmMFL event ignored source=%s win=0x%x reason=internal-or-tabbed", source, win_id)
                 return True
         return False
 
@@ -2212,7 +1805,7 @@ class FvwmTabsServer:
 
     def _get_cached_client_window_snapshot(self, min_refreshed_at=0.0, force=False):
         started = time.monotonic()
-        now = time.monotonic()
+        now = started
         if (
             not force
             and self._client_list_cache is not None
@@ -2220,7 +1813,6 @@ class FvwmTabsServer:
             and now - self._client_list_cache_at <= CLIENT_LIST_CACHE_SECONDS
             and self._client_list_cache_at >= min_refreshed_at
         ):
-            _log_timing("x11.cached_client_snapshot", started, cache_hit=True, windows=len(self._client_list_cache), force=force)
             return set(self._client_list_cache), self._client_list_cache_details, self._client_list_cache_at
         if (
             force
@@ -2229,26 +1821,16 @@ class FvwmTabsServer:
             and now - self._client_list_cache_at <= CLIENT_LIST_FORCE_MIN_INTERVAL_SECONDS
             and self._client_list_cache_at >= min_refreshed_at
         ):
-            _log_timing(
-                "x11.cached_client_snapshot",
-                started,
-                cache_hit=True,
-                rate_limited=True,
-                windows=len(self._client_list_cache),
-                force=force,
-            )
             return set(self._client_list_cache), self._client_list_cache_details, self._client_list_cache_at
 
         current, details = _get_client_window_snapshot()
         snapshot_at = self._cache_client_window_snapshot(current, details)
-        _log_timing("x11.cached_client_snapshot", started, cache_hit=False, windows=len(current), force=force)
         return current, details, snapshot_at
 
     def _handle_line(self, line):
         try:
             parts = shlex.split(line)
         except Exception as err:
-            _log(logging.WARNING, "command parse fallback line=%r error=%s", line, err)
             parts = line.split()
         if not parts:
             return
@@ -2271,134 +1853,89 @@ class FvwmTabsServer:
             "destroytabber": "destroy_tabber",
             "destroyactivetabber": "destroy_active_tabber",
             "ping": "ping",
-            "dumpautoswallow": "dump_autoswallow",
             "quit": "quit",
         }
         return aliases.get(command.strip().lower())
 
     def _execute_command(self, command, args=None, source="internal"):
-        started = time.monotonic()
         args = list(args or [])
         action = self._canonical_command(command)
-        _log(logging.INFO, "command received source=%s command=%s args=%r action=%s", source, command, args, action)
-        try:
-            if action is None:
-                _log(logging.WARNING, "unknown command ignored source=%s command=%s args=%r", source, command, args)
-                return
+        if action is None:
+            return
 
-            if action == "ping":
-                return
+        if action == "ping":
+            return
 
-            if action == "dump_autoswallow":
-                self._dump_autoswallow()
-                return
+        if action == "new_tabber":
+            geometry = self._parse_new_tabber_args(args)
+            self._request_new_tabber(geometry)
+            return
 
-            if action == "new_tabber":
-                geometry = self._parse_new_tabber_args(args)
-                self._request_new_tabber(geometry)
+        if action == "add":
+            if len(args) < 2:
                 return
-
-            if action == "add":
-                if len(args) < 2:
-                    _log(logging.WARNING, "add command ignored: expected tabber id and window id args=%r", args)
-                    return
-                tabber_id = _normalize_tabber_id(args[0], default=1)
-                if tabber_id is None:
-                    _log(logging.WARNING, "add command ignored: invalid tabber id args=%r", args)
-                    return
-                try:
-                    win_id = int(args[1], 0)
-                except ValueError:
-                    _log(logging.WARNING, "add command ignored: invalid window id args=%r", args)
-                    return
-                title = " ".join(args[2:]) if len(args) > 2 else _get_window_identity(win_id)["name"]
-                self._route_window_to_tabber(tabber_id, win_id, title)
+            tabber_id = _normalize_tabber_id(args[0], default=1)
+            if tabber_id is None:
                 return
-
-            if action == "tabize":
-                tabber_id = _normalize_tabber_id(args[0], default=1) if args else 1
-                self._request_add_loop(tabber_id)
+            try:
+                win_id = int(args[1], 0)
+            except ValueError:
                 return
+            title = " ".join(args[2:]) if len(args) > 2 else _get_window_identity(win_id)["name"]
+            self._route_window_to_tabber(tabber_id, win_id, title)
+            return
 
-            if action == "tabize_active":
-                tabber_id = self._get_active_tabber_id()
-                _log(logging.INFO, "root menu command used active tabber id=%s command=TabizeActive", tabber_id)
-                self._request_add_loop(tabber_id)
-                return
+        if action == "tabize":
+            tabber_id = _normalize_tabber_id(args[0], default=1) if args else 1
+            self._request_add_loop(tabber_id)
+            return
 
-            if action == "next_tab":
-                tabber_id = _normalize_tabber_id(args[0], default=1) if args else 1
-                if tabber_id in self.tabbers:
-                    self.tabbers[tabber_id].next_tab()
-                else:
-                    _log(logging.INFO, "nextTab ignored: tabber %s does not exist", tabber_id)
-                return
+        if action == "tabize_active":
+            tabber_id = self._get_active_tabber_id()
+            self._request_add_loop(tabber_id)
+            return
 
-            if action == "next_tab_active":
-                tabber_id = self._get_active_tabber_id()
-                _log(logging.INFO, "root menu command used active tabber id=%s command=NextTabActive", tabber_id)
-                if tabber_id in self.tabbers:
-                    self.tabbers[tabber_id].next_tab()
-                else:
-                    _log(logging.INFO, "nextTabActive ignored: tabber %s does not exist", tabber_id)
-                return
+        if action == "next_tab":
+            tabber_id = _normalize_tabber_id(args[0], default=1) if args else 1
+            if tabber_id in self.tabbers:
+                self.tabbers[tabber_id].next_tab()
+            return
 
-            if action == "prev_tab":
-                tabber_id = _normalize_tabber_id(args[0], default=1) if args else 1
-                if tabber_id in self.tabbers:
-                    self.tabbers[tabber_id].prev_tab()
-                else:
-                    _log(logging.INFO, "prevTab ignored: tabber %s does not exist", tabber_id)
-                return
+        if action == "next_tab_active":
+            tabber_id = self._get_active_tabber_id()
+            if tabber_id in self.tabbers:
+                self.tabbers[tabber_id].next_tab()
+            return
 
-            if action == "prev_tab_active":
-                tabber_id = self._get_active_tabber_id()
-                _log(logging.INFO, "root menu command used active tabber id=%s command=PrevTabActive", tabber_id)
-                if tabber_id in self.tabbers:
-                    self.tabbers[tabber_id].prev_tab()
-                else:
-                    _log(logging.INFO, "prevTabActive ignored: tabber %s does not exist", tabber_id)
-                return
+        if action == "prev_tab":
+            tabber_id = _normalize_tabber_id(args[0], default=1) if args else 1
+            if tabber_id in self.tabbers:
+                self.tabbers[tabber_id].prev_tab()
+            return
 
-            if action == "destroy_tabber":
-                tabber_id = _normalize_tabber_id(args[0], default=1) if args else 1
-                tabber = self.tabbers.pop(tabber_id, None)
-                if tabber:
-                    _log(logging.INFO, "tabber destroyed id=%s", tabber_id)
-                    tabber.on_destroy = None
-                    tabber.destroy()
-                    if self.active_tabber_id == tabber_id:
-                        self.active_tabber_id = None
-                        _log(logging.INFO, "active tabber cleared id=%s reason=destroyed", tabber_id)
-                else:
-                    _log(logging.INFO, "destroyTabber ignored: tabber %s does not exist", tabber_id)
-                return
+        if action == "prev_tab_active":
+            tabber_id = self._get_active_tabber_id()
+            if tabber_id in self.tabbers:
+                self.tabbers[tabber_id].prev_tab()
+            return
 
-            if action == "destroy_active_tabber":
-                tabber_id = self._get_active_tabber_id()
-                _log(logging.INFO, "root menu command used active tabber id=%s command=DestroyActiveTabber", tabber_id)
-                tabber = self.tabbers.pop(tabber_id, None)
-                if tabber:
-                    _log(logging.INFO, "tabber destroyed id=%s", tabber_id)
-                    tabber.on_destroy = None
-                    tabber.destroy()
-                    if self.active_tabber_id == tabber_id:
-                        self.active_tabber_id = None
-                        _log(logging.INFO, "active tabber cleared id=%s reason=destroyed", tabber_id)
-                else:
-                    _log(logging.INFO, "destroyActiveTabber ignored: tabber %s does not exist", tabber_id)
-                return
+        if action == "destroy_tabber":
+            tabber_id = _normalize_tabber_id(args[0], default=1) if args else 1
+            self._do_destroy_tabber(tabber_id, "destroyTabber")
+            return
 
-            if action == "quit":
-                _log(logging.INFO, "quit command received")
-                self._cleanup()
-                try:
-                    self.root.destroy()
-                except Exception:
-                    pass
-                sys.exit(0)
-        finally:
-            _log_timing("server.execute_command", started, source=source, command=command, action=action)
+        if action == "destroy_active_tabber":
+            tabber_id = self._get_active_tabber_id()
+            self._do_destroy_tabber(tabber_id, "destroyActiveTabber")
+            return
+
+        if action == "quit":
+            self._cleanup()
+            try:
+                self.root.destroy()
+            except Exception:
+                pass
+            sys.exit(0)
 
     def _parse_new_tabber_args(self, args):
         geometry = None
@@ -2433,7 +1970,6 @@ class FvwmTabsServer:
         return tabber_id
 
     def _create_tabber(self, tabber_id=None, geometry=None):
-        started = time.monotonic()
         # New tabbers become active immediately; focus/dropdown events can move
         # active_tabber_id later.
         had_tabbers = bool(self.tabbers)
@@ -2442,7 +1978,6 @@ class FvwmTabsServer:
         else:
             tabber_id = _normalize_tabber_id(tabber_id)
         if tabber_id is None:
-            _log_timing("server.create_tabber", started, tabber_id=tabber_id, result=False, reason="invalid-id")
             return None
 
         if tabber_id in self.tabbers:
@@ -2450,7 +1985,6 @@ class FvwmTabsServer:
             if geometry:
                 existing.top.geometry(geometry)
             existing.activate()
-            _log_timing("server.create_tabber", started, tabber_id=tabber_id, result=True, existing=True)
             return existing
 
         tabber = Tabber(
@@ -2468,7 +2002,6 @@ class FvwmTabsServer:
         self.tabbers[tabber_id] = tabber
         if self._next_tabber_counter <= tabber_id:
             self._next_tabber_counter = tabber_id + 1
-        _log(logging.INFO, "tabber created id=%s geometry=%r", tabber_id, geometry)
         tabber.activate()
         tabber.top.update_idletasks()
         self.root.after(100, tabber.activate)
@@ -2477,7 +2010,6 @@ class FvwmTabsServer:
             self._schedule_startup_scan(250)
         if not had_tabbers and self._autoswallow_rules_configured():
             self._schedule_first_tabber_scan(500)
-        _log_timing("server.create_tabber", started, tabber_id=tabber_id, result=True, existing=False, had_tabbers=had_tabbers)
         return tabber
 
     def _request_new_tabber(self, geometry=None):
@@ -2488,9 +2020,7 @@ class FvwmTabsServer:
 
     def _request_add_loop(self, tabber_id):
         if not self._selection_lock.acquire(blocking=False):
-            _log(logging.INFO, "window selection ignored: another selection is already active")
             return
-        _log(logging.INFO, "window selection cursor is controlled by FVWM/xdotool/X11, not FvwmTabs")
         threading.Thread(target=self._interactive_add_loop_guarded, args=(tabber_id,), daemon=True).start()
 
     def _set_active_tabber(self, tabber_id, source="unknown"):
@@ -2499,13 +2029,11 @@ class FvwmTabsServer:
             return
         if self.active_tabber_id != normalized_id:
             self.active_tabber_id = normalized_id
-            _log(logging.INFO, "active tabber changed id=%s source=%s", normalized_id, source)
 
     def _get_active_tabber_id(self):
         if self.active_tabber_id in self.tabbers:
             return self.active_tabber_id
         if self.active_tabber_id is not None:
-            _log(logging.INFO, "active tabber id=%s no longer exists; using default id=1", self.active_tabber_id)
             self.active_tabber_id = None
         return 1
 
@@ -2535,8 +2063,6 @@ class FvwmTabsServer:
             if not create_missing:
                 return None
             tabber = self._create_tabber(normalized_id, geometry)
-            if tabber is not None:
-                _log(logging.INFO, "tabber auto-created id=%s source=%s", normalized_id, source)
             return tabber
         tabber = self.tabbers[normalized_id]
         if geometry:
@@ -2553,20 +2079,27 @@ class FvwmTabsServer:
             self.tabbers.pop(normalized_id, None)
             if self.active_tabber_id == normalized_id:
                 self.active_tabber_id = None
-                _log(logging.INFO, "active tabber cleared id=%s reason=destroyed", normalized_id)
 
     def _route_window_to_tabber(self, tabber_id, win_id, title=None, source="manual", create_missing=True):
-        started = time.monotonic()
         # Manual add and autoSwallow both converge here so every tab follows the
         # same storage, release, kill, and destroy path.
-        tabber = self._get_tabber(tabber_id, source=source, create_missing=create_missing)
+        #
+        # When this call will auto-create the target tabber, seed it with the
+        # target window's current geometry. A geometry-less tabber is placed by
+        # Fvwm at a default position and visibly jumps before we can swallow the
+        # window. Only read geometry when creating a brand-new tabber so existing
+        # tabbers are never moved out from under the user; fall back to default
+        # placement if the geometry cannot be read.
+        create_geometry = None
+        if create_missing and not self._tabber_exists(tabber_id):
+            create_geometry = _get_window_geometry_string(win_id)
+        tabber = self._get_tabber(
+            tabber_id, geometry=create_geometry, source=source, create_missing=create_missing
+        )
         if tabber is None:
-            _log(logging.WARNING, "route window failed: invalid tabber=%r win=0x%x", tabber_id, win_id)
-            _log_timing("server.route_window", started, tabber_id=tabber_id, win_id=win_id, source=source, result=False, reason="missing-tabber")
             return False
         self._release_window_from_other_tabber(win_id, skip_id=tabber.tabber_id)
         result = tabber.add_window(win_id, title or _get_window_identity(win_id)["name"])
-        _log_timing("server.route_window", started, tabber_id=tabber.tabber_id, win_id=win_id, source=source, result=result)
         return result
 
     def _release_window_from_other_tabber(self, win_id, skip_id=None):
@@ -2586,7 +2119,6 @@ class FvwmTabsServer:
         client_list_details=None,
         client_list_snapshot_at=None,
     ):
-        started = time.monotonic()
         # Removed EWMH client-list entries can be ordinary reparent side effects.
         # Do not verify them synchronously; released-window suppression has its
         # own TTL and FvwmMFL destroy events also clear it when available.
@@ -2605,21 +2137,16 @@ class FvwmTabsServer:
             if self._is_internal_window(win_id):
                 self._mark_autoswallow_seen(win_id)
                 skipped += 1
-                _log(logging.DEBUG, "autoSwallow watcher skip source=%s win=0x%x reason=internal-or-tabbed", source, win_id)
                 continue
             if self._is_autoswallow_seen(win_id):
                 skipped += 1
-                _log(logging.DEBUG, "autoSwallow watcher skip source=%s win=0x%x reason=already-seen", source, win_id)
                 continue
             if self._is_autoswallow_suppressed(win_id):
                 skipped += 1
-                _log(logging.DEBUG, "autoSwallow watcher skip source=%s win=0x%x reason=suppressed", source, win_id)
                 continue
             if win_id in self._pending_autoswallow or win_id in self._fvwmmfl_pending_probes:
                 skipped += 1
-                _log(logging.DEBUG, "autoSwallow watcher skip source=%s win=0x%x reason=probe-or-retry-pending", source, win_id)
                 continue
-            _log(logging.INFO, "autoSwallow new client window detected source=%s win=0x%x", source, win_id)
             self._queue_autoswallow_probe(
                 source,
                 win_id,
@@ -2627,19 +2154,8 @@ class FvwmTabsServer:
                 client_list_snapshot_at=client_list_snapshot_at,
             )
             queued += 1
-        _log_timing(
-            "autoswallow.window_snapshot",
-            started,
-            source=source,
-            current=len(current),
-            new=len(new_windows),
-            removed=len(removed_windows),
-            queued=queued,
-            skipped=skipped,
-        )
 
     def _forget_removed_client_windows(self, removed_windows, check_exists=True):
-        started = time.monotonic()
         checked = 0
         cleared = 0
         existing_windows = None
@@ -2658,14 +2174,6 @@ class FvwmTabsServer:
             self._fvwmmfl_failed_probe_seen.pop(win_id, None)
             self._clear_autoswallow_suppression(win_id)
             cleared += 1
-        _log_timing(
-            "autoswallow.forget_removed",
-            started,
-            removed=len(removed_windows),
-            check_exists=check_exists,
-            checked=checked,
-            cleared=cleared,
-        )
 
     def _cancel_pending_autoswallow(self, win_id):
         job = self._pending_autoswallow.pop(win_id, None)
@@ -2696,7 +2204,6 @@ class FvwmTabsServer:
         # it briefly to prevent "release then immediately swallow again".
         self._autoswallow_suppressed[win_id] = (time.monotonic(), reason)
         self._cancel_pending_autoswallow(win_id)
-        _log(logging.INFO, "autoSwallow suppressed released window win=0x%x reason=%s", win_id, reason)
 
     def _is_autoswallow_suppressed(self, win_id):
         item = self._autoswallow_suppressed.get(win_id)
@@ -2757,24 +2264,20 @@ class FvwmTabsServer:
         self._tabbed_window_sweep_job = self.root.after(TABBED_WINDOW_SWEEP_MS, self._sweep_tabbed_windows)
 
     def _sweep_tabbed_windows(self):
-        started = time.monotonic()
         self._tabbed_window_sweep_job = None
         try:
             if self._stop_event.is_set():
                 return
             if not self._has_tabbed_windows():
-                _log_timing("tabbed_window.sweep", started, tabbers=len(self.tabbers), tabs=0, removed=0, skipped=True)
                 return
             existing_windows = _list_existing_x_windows()
             if existing_windows is None:
-                _log_timing("tabbed_window.sweep", started, tabbers=len(self.tabbers), removed=0, skipped=True)
                 return
             removed = 0
             tabs = 0
             for tabber in list(self.tabbers.values()):
                 tabs += len(tabber.tabs)
                 removed += tabber.remove_missing_windows(existing_windows)
-            _log_timing("tabbed_window.sweep", started, tabbers=len(self.tabbers), tabs=tabs, removed=removed)
         finally:
             self._schedule_tabbed_window_sweep()
 
@@ -2787,10 +2290,7 @@ class FvwmTabsServer:
         if not self.tabbers:
             self._startup_scan_attempts += 1
             if self._startup_scan_attempts <= 30:
-                _log(logging.DEBUG, "autoSwallow startup scan waiting for first tabber attempt=%s", self._startup_scan_attempts)
                 self._schedule_startup_scan(1000)
-            else:
-                _log(logging.INFO, "autoSwallow startup scan deferred until first tabber exists")
             return
 
         self._startup_scan_done = True
@@ -2808,7 +2308,6 @@ class FvwmTabsServer:
             return
         self._first_tabber_scan_done = True
         if not self.tabbers:
-            _log(logging.INFO, "autoSwallow first-tabber safety scan skipped: no tabbers exist")
             return
         self._process_autoswallow_scan("first_tabber_scan")
 
@@ -2834,13 +2333,6 @@ class FvwmTabsServer:
                 return
             new_windows = current - self._known_windows
             removed_windows = self._known_windows - current
-            if new_windows:
-                _log(
-                    logging.INFO,
-                    "autoSwallow fallback scan found unknown_windows=%d current_windows=%d",
-                    len(new_windows),
-                    len(current),
-                )
             self._handle_window_snapshot(
                 current,
                 new_windows,
@@ -2857,37 +2349,28 @@ class FvwmTabsServer:
         self._fallback_scan_job = self.root.after(AUTOSWALLOW_FALLBACK_SCAN_MS, self._fallback_scan_windows)
 
     def _process_autoswallow_scan(self, source):
-        started = time.monotonic()
         current, details, snapshot_at = self._get_cached_client_window_snapshot(force=True)
         if not self._client_window_snapshot_available(details):
-            _log(logging.DEBUG, "autoSwallow scan skipped source=%s reason=client-list-unavailable", source)
-            _log_timing("autoswallow.scan", started, source=source, windows=0, queued=0, reason="client-list-unavailable")
             return
         removed_windows = self._known_windows - current
         self._known_windows = current
         self._forget_removed_client_windows(removed_windows, check_exists=True)
-        _log(logging.INFO, "autoSwallow scan source=%s windows=%d", source, len(current))
         queued = 0
         skipped = 0
         for win_id in sorted(current):
             if self._is_internal_window(win_id):
                 self._mark_autoswallow_seen(win_id)
                 skipped += 1
-                _log(logging.DEBUG, "autoSwallow scan skip source=%s win=0x%x reason=internal-or-tabbed", source, win_id)
                 continue
             if self._is_autoswallow_seen(win_id):
                 skipped += 1
-                _log(logging.DEBUG, "autoSwallow scan skip source=%s win=0x%x reason=already-seen", source, win_id)
                 continue
             if self._is_autoswallow_suppressed(win_id):
                 skipped += 1
-                _log(logging.DEBUG, "autoSwallow scan skip source=%s win=0x%x reason=suppressed", source, win_id)
                 continue
             if win_id in self._pending_autoswallow or win_id in self._fvwmmfl_pending_probes:
                 skipped += 1
-                _log(logging.DEBUG, "autoSwallow scan skip source=%s win=0x%x reason=probe-or-retry-pending", source, win_id)
                 continue
-            _log(logging.INFO, "autoSwallow scan candidate source=%s win=0x%x", source, win_id)
             self._queue_autoswallow_probe(
                 source,
                 win_id,
@@ -2895,69 +2378,38 @@ class FvwmTabsServer:
                 client_list_snapshot_at=snapshot_at,
             )
             queued += 1
-        _log_timing("autoswallow.scan", started, source=source, windows=len(current), queued=queued, skipped=skipped)
 
     def _handle_new_window(self, win_id, retries_left=AUTOSWALLOW_RETRIES, source="watcher"):
-        started = time.monotonic()
         # Candidate filtering is ordered from cheap/local checks to xprop-heavy
         # identity work and finally to rule matching/routing.
         if not self._autoswallow_rules_configured():
-            _log_timing("autoswallow.handle_new_window", started, source=source, win_id=win_id, result="rules-disabled")
             return
         if win_id not in self._known_windows:
             self._cancel_pending_autoswallow(win_id)
-            _log(logging.DEBUG, "autoSwallow skip source=%s win=0x%x reason=not-in-client-list", source, win_id)
-            _log_timing("autoswallow.handle_new_window", started, source=source, win_id=win_id, result="not-in-client-list")
             return
         if self._is_autoswallow_suppressed(win_id):
             self._cancel_pending_autoswallow(win_id)
-            _log(logging.INFO, "autoSwallow skip reason=manual-release-suppressed source=%s win=0x%x", source, win_id)
-            _log_timing("autoswallow.handle_new_window", started, source=source, win_id=win_id, result="suppressed")
             return
         if self._is_autoswallow_seen(win_id):
-            _log(logging.DEBUG, "autoSwallow skip source=%s win=0x%x reason=already-seen", source, win_id)
-            _log_timing("autoswallow.handle_new_window", started, source=source, win_id=win_id, result="already-seen")
             return
         if self._is_internal_window(win_id):
             self._mark_autoswallow_seen(win_id)
             self._cancel_pending_autoswallow(win_id)
-            _log(logging.INFO, "autoSwallow skipped internal/tabbed window source=%s win=0x%x", source, win_id)
-            _log_timing("autoswallow.handle_new_window", started, source=source, win_id=win_id, result="internal")
             return
 
         identity = _get_window_identity(win_id, timeout=AUTOSWALLOW_PROBE_COMMAND_TIMEOUT)
-        identity_log_level = logging.INFO if retries_left == AUTOSWALLOW_RETRIES else logging.DEBUG
-        _log(identity_log_level, "autoSwallow identity parsed source=%s retries_left=%s %s", source, retries_left, _format_identity(identity))
         if _identity_is_tabber_window(identity):
             self._mark_autoswallow_seen(win_id)
             self._cancel_pending_autoswallow(win_id)
-            _log(logging.INFO, "autoSwallow skipped internal/tabber window source=%s win=0x%x", source, win_id)
-            _log_timing("autoswallow.handle_new_window", started, source=source, win_id=win_id, result="internal-tabber")
             return
         if identity.get("probe_timeout") and self._is_fvwmmfl_autoswallow_source(source):
             self._mark_fvwmmfl_failed_probe(win_id)
             self._cancel_pending_autoswallow(win_id)
-            _log(
-                logging.WARNING,
-                "autoSwallow FvwmMFL probe timed out; immediate retry suppressed source=%s win=0x%x retries_left=%s",
-                source,
-                win_id,
-                retries_left,
-            )
-            _log_timing("autoswallow.handle_new_window", started, source=source, win_id=win_id, result="probe-timeout")
             return
         skip_reason = self._autoswallow_skip_reason(identity, timeout=AUTOSWALLOW_PROBE_COMMAND_TIMEOUT)
         if skip_reason:
             self._mark_autoswallow_seen(win_id)
             self._cancel_pending_autoswallow(win_id)
-            _log(
-                logging.INFO,
-                "autoSwallow skipped transient/menu/dialog window source=%s reason=%s %s",
-                source,
-                skip_reason,
-                _format_identity(identity),
-            )
-            _log_timing("autoswallow.handle_new_window", started, source=source, win_id=win_id, result=skip_reason)
             return
 
         target_id, rule_kind, pattern = self._match_autoswallow_target(identity)
@@ -2967,44 +2419,7 @@ class FvwmTabsServer:
                 if not self.auto_create_assigned_tabber:
                     self._mark_autoswallow_seen(win_id)
                     self._cancel_pending_autoswallow(win_id)
-                    _log(
-                        logging.INFO,
-                        "autoSwallow ignored source=%s win=0x%x rule=%s:%r target_tabber=%s reason=tabber-missing",
-                        source,
-                        win_id,
-                        rule_kind,
-                        pattern,
-                        target_id,
-                    )
-                    _log_timing("autoswallow.handle_new_window", started, source=source, win_id=win_id, result="target-missing", target_id=target_id)
                     return
-                _log(
-                    logging.INFO,
-                    "autoSwallow auto-creating tabber source=%s win=0x%x rule=%s:%r target_tabber=%s",
-                    source,
-                    win_id,
-                    rule_kind,
-                    pattern,
-                    target_id,
-                )
-            _log(
-                logging.INFO,
-                "autoSwallow rule matched source=%s win=0x%x rule=%s:%r target_tabber=%s %s",
-                source,
-                win_id,
-                rule_kind,
-                pattern,
-                target_id,
-                _format_identity(identity),
-            )
-            _log(
-                logging.INFO,
-                "autoSwallow route attempted source=%s win=0x%x target_tabber=%s target_existed=%s",
-                source,
-                win_id,
-                target_id,
-                target_existed,
-            )
             routed = self._route_window_to_tabber(
                 target_id,
                 win_id,
@@ -3012,70 +2427,28 @@ class FvwmTabsServer:
                 source="autoSwallow",
                 create_missing=self.auto_create_assigned_tabber,
             )
-            _log(
-                logging.INFO if routed else logging.WARNING,
-                "autoSwallow route %s source=%s win=0x%x rule=%s:%r target_tabber=%s target_existed=%s",
-                "succeeded" if routed else "failed",
-                source,
-                win_id,
-                rule_kind,
-                pattern,
-                target_id,
-                target_existed,
-            )
             if routed:
                 self._mark_autoswallow_seen(win_id)
                 self._cancel_pending_autoswallow(win_id)
-                _log_timing("autoswallow.handle_new_window", started, source=source, win_id=win_id, result="routed", target_id=target_id)
                 return
 
-            _log(logging.WARNING, "autoSwallow route failed source=%s win=0x%x target=%s retries_left=%s", source, win_id, target_id, retries_left)
             if retries_left <= 1:
                 self._mark_autoswallow_seen(win_id)
                 self._cancel_pending_autoswallow(win_id)
-                _log_timing("autoswallow.handle_new_window", started, source=source, win_id=win_id, result="route-failed-final", target_id=target_id)
                 return
             self._schedule_autoswallow_retry(win_id, retries_left - 1, identity, source)
-            _log_timing("autoswallow.handle_new_window", started, source=source, win_id=win_id, result="route-retry", target_id=target_id)
             return
 
         missing_needed_identity = self._identity_missing_for_rules(identity)
         if retries_left <= 1 or not missing_needed_identity:
             self._mark_autoswallow_seen(win_id)
             self._cancel_pending_autoswallow(win_id)
-            _log(
-                logging.INFO,
-                (
-                    "autoSwallow no rule matched source=%s win=0x%x reason=%s retries_left=%s "
-                    "resource=%r class=%r name=%r rules=%s; restart FvwmTabs after changing autoSwallow config"
-                ),
-                source,
-                win_id,
-                "identity-incomplete" if missing_needed_identity else "no-matching-rule",
-                retries_left,
-                identity.get("resource", ""),
-                identity.get("class", ""),
-                identity.get("name", ""),
-                self._format_autoswallow_rules(),
-            )
-            _log_timing("autoswallow.handle_new_window", started, source=source, win_id=win_id, result="no-match")
             return
 
-        if retries_left == AUTOSWALLOW_RETRIES:
-            _log(
-                logging.INFO,
-                "autoSwallow identity incomplete; retry scheduled source=%s win=0x%x retries_left=%s %s",
-                source,
-                win_id,
-                retries_left - 1,
-                _format_identity(identity),
-            )
         self._schedule_autoswallow_retry(win_id, retries_left - 1, identity, source)
-        _log_timing("autoswallow.handle_new_window", started, source=source, win_id=win_id, result="identity-retry")
 
     def _schedule_autoswallow_retry(self, win_id, retries_left, identity, source):
         self._cancel_pending_autoswallow(win_id)
-        _log(logging.DEBUG, "autoSwallow retry source=%s win=0x%x retries_left=%s %s", source, win_id, retries_left, _format_identity(identity))
         if self._is_throttled_autoswallow_source(source):
             self._pending_autoswallow[win_id] = self.root.after(
                 AUTOSWALLOW_RETRY_MS,
@@ -3105,20 +2478,14 @@ class FvwmTabsServer:
         return None
 
     def _is_override_redirect(self, win_id, timeout=EXTERNAL_COMMAND_TIMEOUT):
-        started = time.monotonic()
-        result = False
         try:
             out = _run_capture(["xwininfo", "-id", str(win_id)], timeout=timeout)
         except Exception:
             return False
-        try:
-            for line in out.splitlines():
-                if "Override Redirect State:" in line:
-                    result = line.rsplit(":", 1)[1].strip().lower() == "yes"
-                    return result
-            return False
-        finally:
-            _log_timing("x11.override_redirect", started, win_id=win_id, result=result)
+        for line in out.splitlines():
+            if "Override Redirect State:" in line:
+                return line.rsplit(":", 1)[1].strip().lower() == "yes"
+        return False
 
     def _is_internal_window(self, win_id):
         for tabber in self.tabbers.values():
@@ -3145,43 +2512,6 @@ class FvwmTabsServer:
                 return tabber_id, "name", pattern
         return None, None, None
 
-    def _dump_autoswallow(self):
-        current, details = _get_client_window_snapshot()
-        _log(logging.INFO, "dumpAutoSwallow tabbers=%s", self._format_tabber_summary())
-        _log(logging.INFO, "dumpAutoSwallow rules=%s", self._format_autoswallow_rules())
-        for prop in CLIENT_LIST_PROPERTIES:
-            prop_details = details.get(prop, {"available": False, "windows": set()})
-            _log(
-                logging.INFO,
-                "dumpAutoSwallow %s available=%s windows=%s",
-                prop,
-                prop_details["available"],
-                self._format_window_list(prop_details["windows"]),
-            )
-        _log(
-            logging.INFO,
-            "dumpAutoSwallow merged_client_windows count=%d windows=%s",
-            len(current),
-            self._format_window_list(current),
-        )
-        for win_id in sorted(current):
-            identity = _get_window_identity(win_id)
-            target_id, rule_kind, pattern = self._match_autoswallow_target(identity)
-            match = "none"
-            if target_id is not None:
-                match = "%s:%r->%s" % (rule_kind, pattern, target_id)
-            skip_reason = None
-            if self._is_internal_window(win_id):
-                skip_reason = "internal-or-already-tabbed"
-            else:
-                skip_reason = self._autoswallow_skip_reason(identity)
-            _log(
-                logging.INFO,
-                "dumpAutoSwallow window %s match=%s skip=%s",
-                _format_identity(identity),
-                match,
-                skip_reason or "none",
-            )
 
 def _stderr(message):
     print(f"FvwmTabs: {message}", file=sys.stderr)
@@ -3252,55 +2582,9 @@ def _start_server_client():
     return True
 
 
-def _stop_server_client():
-    try:
-        subprocess.run(
-            [sys.executable or "python3", TABBER_CLIENT_PATH, "quit"],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            timeout=2,
-        )
-    except Exception:
-        pass
-
-
-def _wait_for_fvwm_shutdown_mode():
-    deadline = time.monotonic() + FVWM_SHUTDOWN_MARKER_WAIT_SECONDS
-    while time.monotonic() < deadline:
-        mode = _read_fvwm_shutdown_marker()
-        if mode is not None:
-            return mode
-        time.sleep(0.05)
-    return _read_fvwm_shutdown_marker()
-
-
-def _stop_server_after_fvwm_disconnect(restart_handoff=False, module_token=None):
-    if restart_handoff:
-        _clear_fvwm_shutdown_marker()
-        return
-    mode = _wait_for_fvwm_shutdown_mode()
-    # A lost FVWM module pipe is ambiguous during Restart. Do not tear down
-    # synchronously unless FVWM gave an explicit Quit marker; ambiguous cases
-    # are handled by the delayed no-handoff cleanup helper below.
-    if mode == "quit":
-        _stop_server_client()
-        _clear_fvwm_shutdown_marker()
-        _clear_fvwm_module_token(module_token)
-        # Belt-and-suspenders: if _stop_server_client() failed (transient error,
-        # race with async Exec quit, or socket not yet ready), the stale-cleanup
-        # helper will send a second quit after 8 s. It is a no-op if the server
-        # already exited.
-        _schedule_server_cleanup_if_no_module_handoff(module_token)
-        return
-    if mode == "restart":
-        _clear_fvwm_shutdown_marker()
-        return
-    _schedule_server_cleanup_if_no_module_handoff(module_token)
-
-
 def _wait_for_fvwm_exit(read_fd, module_token=None):
     # FVWM closes the module read fd on shutdown. Prefer monitoring it so the
-    # module can reliably quit the server even when FVWM does not signal us.
+    # wrapper exits cleanly without disturbing the long-running server.
     if read_fd is None:
         while True:
             try:
@@ -3375,44 +2659,17 @@ def _module_main(argv):
         except Exception:
             pass
 
-    exit_reason = None
-    try:
-        exit_reason = _wait_for_fvwm_exit(read_fd, module_token=module_token)
-    finally:
-        # Block further signals so a second SIGTERM cannot raise SystemExit
-        # inside _stop_server_after_fvwm_disconnect() and abort cleanup
-        # before _stop_server_client() is reached.
-        for _sig in (signal.SIGINT, signal.SIGTERM, signal.SIGHUP):
-            try:
-                signal.signal(_sig, signal.SIG_IGN)
-            except Exception:
-                pass
-        _stop_server_after_fvwm_disconnect(
-            restart_handoff=(exit_reason == "restart-handoff"),
-            module_token=module_token,
-        )
+    _wait_for_fvwm_exit(read_fd, module_token=module_token)
     return 0
 
 
 def _server_main():
-    if _LOGGER is None:
-        _setup_logging(False)
-    try:
-        server = FvwmTabsServer()
-        server.start()
-    except Exception:
-        if _LOGGER is not None:
-            _LOGGER.exception("fatal server error")
-        raise
+    server = FvwmTabsServer()
+    server.start()
 
 
 def main(argv=None):
     argv = list(argv or sys.argv)
-    if len(argv) > 2 and argv[1] == "--fvwm-shutdown":
-        return 0 if _write_fvwm_shutdown_marker(argv[2]) else 1
-    if len(argv) > 1 and argv[1] == "--fvwm-cleanup-if-stale":
-        token = argv[2] if len(argv) > 2 else None
-        return _cleanup_if_stale_module_handoff(token)
     if len(argv) > 1 and argv[1] == "--server":
         return _server_main()
     if _module_fds(argv) != (None, None):

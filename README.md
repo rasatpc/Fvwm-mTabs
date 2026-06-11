@@ -30,7 +30,7 @@ Tested on Fvwm3 and Fvwm2
 
 Download:
 
-* Version 1.1.5
+* Version 2.0.1
 * https://github.com/rasatpc/Fvwm-mTabs/archive/refs/heads/main.zip
 
 Extract and copy subfolders to ~/.fvwm

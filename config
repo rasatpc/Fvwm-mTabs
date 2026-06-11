@@ -37,16 +37,6 @@ SetEnv HOME_DIR $[HOME]/.fvwm
 SetEnv CORE_DIR $[HOME]/.fvwm/core
 SetEnv USER_DIR $[HOME]/.fvwm/user
 
-#####
-
-# InfoStoreAdd can be used to store variable data internal to fvwm.
-# The variable can then be used in the configuration as $[infostore.name].
-#
-# The following is used in various menus and also sets the terminal
-# that FvwmConsole uses. Change this to your terminal of choice.
-
-InfoStoreAdd terminal xterm
-
 # This is used for "Run Command" and the Meta+Space key-binding.
 # runcmd is the binary name and runcmdopt contains additional
 # command line options.
@@ -58,8 +48,15 @@ InfoStoreAdd runcmdopt "-nb '#2b4e5e'"
 #
 # * global -- the default. This means all screens show the same desktops/pages.
 # * per-monitor -- every monitor has its own virtual desktop/pages.
+#     For this mode it's recommended that FvwmPager is configured to
+#     use the monitor configuration option, so that only windows on that
+#     specific monitor are shown.
 # * shared -- the virtual desktops are shared across all monitors and each
-#     monitor shows a single desktop at a time.
+#     monitor shows a single desktop at a time. If one monitor switches to a
+#     desktop currently being viewed by another, the two monitors swap which
+#     desktop they are viewing.  This is similar to how Xmonad or Herbsflutwm
+#     handle desks.  This mode only works with two or more monitors.
+#
 
 DesktopConfiguration global
 
@@ -79,7 +76,6 @@ DestroyFunc StartFunction
 AddToFunc StartFunction
 + I Test (Init) InitBackground
 + I Module FvwmEvent EventNewDesk
-+ I Module FvwmMFL
 + I ModulePath ${HOME}/.fvwm/FvwmTabs:+
 + I Module FvwmTabs
 
@@ -89,10 +85,7 @@ AddToFunc StartFunction
 Exec exec sh $[HOME_DIR]/setup/copySampleTo.sh
 Exec exec sh $[HOME_DIR]/setup/ButtonScreenPosition.sh
 
-## Load FvwmTabs, startup functions, wifi and system info
-
-#AddToFunc StartFunction
-#+ I Read $[FVWM_USERDIR]/FvwmTabs/ConfigFvwmTabs
+## Load startup functions, wifi and system info
 
 Read $[CORE_DIR]/1Functions/initMgr.sys
 
@@ -197,6 +190,7 @@ Module FvwmEvent FvwmEvent-FDpg
 
 ## Save focus window id on restart
 
+DestroyFunc ExitFunction
 AddToFunc ExitFunction
 + I Test (ToRestart) Current InfoStoreAdd WFocusId $[w.id]
 
@@ -222,13 +216,31 @@ AddToFunc StartFunction
 ## Test available text editor.
 ## Monitor test.
 
-Read $[CORE_DIR]/1Functions/tile-edit-mon.sys
+Read $[CORE_DIR]/1Functions/tile-edit.sys
 
 #############
 # 2: STYLES (menu colors, etc) 
 #
 # Check userExt.sys
 # Example default/config
+
+# EdgeScroll will move the view port between the Pages when the mouse
+# moves to the edge of the screen. This set the amount of distance to
+# scroll at 100% (full page) and the EdgeResistance which is a timer
+# for how long the mouse as at the edge before it scrolls.
+#
+# Set EdgeScroll 0 0 and/or EdgeResistance -1 to disable.
+
+EdgeScroll 100 100
+EdgeResistance 450
+EdgeThickness 1
+Style * EdgeMoveDelay 350, EdgeMoveResistance 350
+
+# EwmhBaseStruts [screen name] [left] [right] [top] [bottom]
+# Reserves space along the edge(s) of the Screen that will not
+# be covered when maximizing or placing windows.
+
+EwmhBaseStruts screen $[monitor.primary] 0 120 0 0
 
 ## This sets the ClickTime and MoveThreshold used to
 ## determine Double Clicks, Hold and Move for the mouse.
@@ -336,6 +348,9 @@ DestroyModuleConfig EventNewDesk:*
 *EventNewDesk: PassID
 *EventNewDesk: new_desk ChangeDesk
 
+AddToFunc ExitFunction
++ I Exec exec sh $[HOME_DIR]/setup/fvwm-exit.sh
+
 #######################
 ## USER
 #######################
@@ -350,17 +365,11 @@ Read $[HOME_DIR]/userExt.sys
 DestroyFunc NoFoc
 AddToFunc NoFoc
 + I Style *DLaunch* NeverFocus
-+ I Style RightPager NeverFocus
 + I Style ControlMP NeverFocus
 + I Style ExitBar NeverFocus
 + I Style RightTbar NeverFocus
-+ I Style HideBar NeverFocus
-+ I Style NoDeskI NeverFocus
-+ I Style Pgfunc NeverFocus
-+ I Style WiconB NeverFocus
 + I Style PgNo NeverFocus
 + I Style FE-Label NeverFocus
 + I Style VdeskPager NeverFocus
-+ I Style MenuB NeverFocus
 
 Schedule 2600 NoFoc

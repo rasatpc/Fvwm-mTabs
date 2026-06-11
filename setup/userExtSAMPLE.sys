@@ -2,14 +2,8 @@
 
 ## This file is for you to make changes (tag and untag) and add your own.
 
-## Tag core config and replace $[CORE_DIR] with $[USER_DIR]
-## Example:
-##  # Read $[CORE_DIR]/4Menus/TMenu/tMenu.conf
-##  Read $[USER_DIR]/TMenu//tMenu.conf
-
 ###########
 # 1. FUNCTIONS (launcher, thumbnail, window position, etc)
-###########
 
 Read $[CORE_DIR]/1Functions/deskPgNo.sys
 Read $[CORE_DIR]/1Functions/deskIcons.sys
@@ -20,48 +14,36 @@ Read $[USER_DIR]/autoMoveW.sys
 
 ###########
 # 2. STYLES (menu colors, etc)
-###########
 
 ###########
 # 3. COLORSETS (color settings, etc.)
-###########
 
 Read $[CORE_DIR]/3Colorsets/kColorsets.sys
 
 ###########
 # 4. MENUS  (menu style, list, etc.)
-###########
 
 ## USER ($[USER_DIR])
 Read $[USER_DIR]/TMenu/tMenu.conf
 
 ###########
 # 5. BINDINGS  (window list, move/resize, etc.)
-###########
 
 Read $[CORE_DIR]/5Bindings/ExposeList/fvwmExposeList.sys
 Read $[CORE_DIR]/5Bindings/MoRzBinding.sys
 Read $[CORE_DIR]/5Bindings/tBinding.sys
 
-## USER ($[USER_DIR])
-
 ###########
 # 6. DECOR  (window title bar, border, etc.)
-###########
 
-Read $[CORE_DIR]/6Decor/5BtmLine/button5L.sys
-# Read $[CORE_DIR]/6Decor/5BtmDecor/button5Dec.sys
-
-## USER ($[USER_DIR])
+Read $[CORE_DIR]/6Decor/5BtmDecor/button5Dec.sys
 
 ###########
 # 7. MODULES (control-panel, desk-icon, pager, etc.)
-###########
 
 Read $[CORE_DIR]/7Modules/ControlMinPanel/controlMP.sys
 Read $[CORE_DIR]/7Modules/RightTaskBar/rightTbar.sys
-Schedule 500 Read $[CORE_DIR]/7Modules/vPager.sys
-# Schedule 500 Read $[CORE_DIR]/7Modules/VPager-hdmi.sys
+Read $[CORE_DIR]/7Modules/vPager.sys
 
 ## USER ($[USER_DIR])
 Read $[USER_DIR]/SimpleButton/simpleB.sys
@@ -94,11 +76,9 @@ Style * ClickToFocus, FPGrabFocus
 ##### Window Placement
 ## Style to center the window location.
 
-Style * CascadePlacement
 #Style * TileCascadePlacement
-#Style * MinOverlapPlacement, GrabFocusOff, !UsePPosition
-
-Style FvwmTabs* PositionPlacement +0 +0
+#Style * CascadePlacement
+Style *Chromium* MinOverlapPlacement, GrabFocusOff, !UsePPosition
 
 ##### Exit panel 
 ## Center panel postion.
@@ -115,14 +95,3 @@ GeometryWindow Hide
 ##### Change Window title bar font.
 
 DefaultFont "xft:Noto:Sans:size=11"
-
-##### Add tabs on each desk at startup.
-## Check user/autoMoveW.sys
-
-DestroyFunc Tabs
-AddToFunc Tabs
-+ I NewTabber --geometry=175x70
-+ I NewTabber --geometry=175x70
-# + I NewTabber --geometry=175x70
-
-Schedule 1200 Tabs
