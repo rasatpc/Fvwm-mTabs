@@ -4,9 +4,7 @@ The FVWM module is a single executable file:
 
    FvwmTabs
 
-There is no separate FvwmTabs.py entrypoint. The tabber_client.py remains as the
-small command client used by FVWM functions, and fvwmmfl_client.py remains as
-the optional FvwmMFL socket/event helper.
+There is no separate FvwmTabs.py entrypoint. The tabber_client.py remains as the small command client used by FVWM functions, and fvwmmfl_client.py remains as the optional FvwmMFL socket/event helper.
 
 Requirements:
 
@@ -43,16 +41,13 @@ Install
    + I ModulePath ${HOME}/.fvwm/modules:+
    + I Module FvwmTabs
 
-FVWM starts the executable named FvwmTabs from ModulePath. During module
-startup, FvwmTabs reads ConfigFvwmTabs, starts the Python/Tk server through
-tabber_client.py, and stays connected to FVWM until FVWM exits.
+FVWM starts the executable named FvwmTabs from ModulePath. During module startup, FvwmTabs reads ConfigFvwmTabs, starts the Python/Tk server through tabber_client.py, and stays connected to FVWM until FVWM exits.
 
 This startup path does not start, load, or probe FvwmMFL.
 
 Manual Startup
 
-Standard FVWM module loading is the supported startup path. For troubleshooting
-or legacy manual use, set FVWMTABS_DIR before reading ConfigFvwmTabs:
+Standard FVWM module loading is the supported startup path. For troubleshooting or legacy manual use, set FVWMTABS_DIR before reading ConfigFvwmTabs:
 
    SetEnv FVWMTABS_DIR ${HOME}/.fvwm/modules
    Read ${HOME}/.fvwm/modules/ConfigFvwmTabs

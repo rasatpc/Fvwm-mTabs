@@ -14,7 +14,7 @@ AddToMenu MenuStart
 + "Info " $[infostore.EDT] $[HOME_DIR]/setup/help/info.txt
 + "Bindings " $[infostore.EDT] $[CORE_DIR]/5Bindings/tBinding.sys
 
-+ "How To " Exec exec display -size 960x540 $[HOME]/.fvwm/setup/images/Fvwm-mTab-v1.0.1-help.png
++ "How To " Exec exec display -size 960x540 $[HOME]/.fvwm/setup/images/Fvwm-mTab-v2.0.1-help.png
 
 ## Set small icons
 
