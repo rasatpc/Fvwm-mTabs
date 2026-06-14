@@ -1,27 +1,14 @@
-# FvwmTabs v12 FVWM functions
-# FVWMTABS_DIR is set by the FvwmTabs module from its actual ModulePath.
-SetEnv FVWMTABS_DEFAULT_ID 1
+## FVWMTABS_DIR is set by the FvwmTabs module from its actual ModulePath.
+## Example: ModulePath ${HOME}/.fvwm/modules:+
 
-DestroyFunc FvwmTabsStart
-AddToFunc FvwmTabsStart
-+ I Exec exec python3 "$[FVWMTABS_DIR]/tabber_client.py" start
+## Create new tabber
 
 DestroyFunc NewTabber
 AddToFunc NewTabber
 + I Exec exec python3 "$[FVWMTABS_DIR]/tabber_client.py" createNewTabber $*
 
-DestroyFunc FvwmTabs_AddPicked
-AddToFunc FvwmTabs_AddPicked
-+ I Exec exec python3 "$[FVWMTABS_DIR]/tabber_client.py" add $0 "$[w.id]" "$[w.name]"
+## Legacy/default tabber commands.
 
-DestroyFunc FvwmTabs_TabizeLoop
-AddToFunc FvwmTabs_TabizeLoop
-+ I Pick Function FvwmTabs_AddPicked $0
-+ I TestRc (NoMatch) Break
-+ I Function FvwmTabs_TabizeLoop $0
-
-# Legacy/default tabber commands. These stay for existing key bindings and
-# FvwmConsole habits; the root menu below uses the active-tabber variants.
 DestroyFunc Tabize
 AddToFunc Tabize
 + I Function FvwmTabs_TabizeLoop $[FVWMTABS_DEFAULT_ID]
@@ -74,8 +61,8 @@ DestroyFunc QuitFvwmTabs
 AddToFunc QuitFvwmTabs
 + I Exec exec python3 "$[FVWMTABS_DIR]/tabber_client.py" quit
 
-# Root menu actions target the active tabber, falling back to tabber 1 inside
-# the Python server when no active tabber is known.
+## Root menu (right-click):
+
 DestroyMenu TabbersMenu
 AddToMenu TabbersMenu "FvwmTabs" Title
 + "Create New Tabber" Function NewTabber
@@ -86,11 +73,14 @@ AddToMenu TabbersMenu "FvwmTabs" Title
 + "" Nop
 + "Destroy Tabber" Function DestroyActiveTabber
 
-# Optional key bindings (users may comment out)
+## Optional key bindings (users may comment out)
+
 Key T A CM Function NewTabber
 Key W A CM Function Tabize
 Key Right A CM Function NextTab
 Key Left A CM Function PrevTab
 
-# Optional root-window menu binding (comment out if you already use right-click root menus)
-Mouse 3 R A Menu TabbersMenu mouse 0p 0p
+## Optional root-window menu binding (comment out in FvwmTabs.conf if you already use a right-click root menu).
+## Example: Mouse 3 R A Menu TabbersMenu mouse 0p 0p
+
+Read $[FVWMTABS_DIR]/FvwmTabs.conf
