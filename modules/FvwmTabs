@@ -30,7 +30,7 @@ MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_PATH = os.path.join(MODULE_DIR, "FvwmTabs.conf")
 FVWM_CONFIG_PATH = os.path.join(MODULE_DIR, "ConfigFvwmTabs")
 TABBER_CLIENT_PATH = os.path.join(MODULE_DIR, "tabber_client.py")
-VERSION_LABEL = "FvwmTabs v12-poll-backoff"
+VERSION_LABEL = "FvwmTabs fvwmmfl_client.py"
 DEFAULT_GEOMETRY = "170x40"
 TABBER_WINDOW_CLASS = "FvwmTabs"
 TABBER_RESOURCE_PREFIX = "fvwmTabs"
@@ -75,11 +75,11 @@ THEMES = {
     "black": {
         "tabbar_bg": "#222222",
         "content_bg": "#111111",
-        "button_bg": "#333333",
+        "button_bg": "#4d4b4b",
         "button_fg": "#eeeeee",
         "button_active_bg": "#000000",
         "button_active_fg": "#ffffff",
-        "button_selected_bg": "#4d4b4b",
+        "button_selected_bg": "#333333",
         "button_selected_fg": "#ffffff",
         "button_selected_border": "#7aa7ff",
         "close_fg": "#bbbbbb",
