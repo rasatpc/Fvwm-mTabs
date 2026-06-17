@@ -43,4 +43,4 @@ To edit, click on lable in the menu (left-click) <System>.
 Backup of .fvwm/tab-module/FvwmTabs.conf in .fvwm/user/Backup
 
 By Rasat
-15 June 2026
+17 June 2026

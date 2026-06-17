@@ -28,4 +28,4 @@ https://www.box-look.org
 Fvwm3-myExt extensions (configs) development started on 8 Dec 2020.
 Fvwm-KISe on 10 July 2023
 Fvwm-mTab
-Last update: 15 June 2026
+Last update: 17 June 2026

@@ -79,6 +79,7 @@ Style * ClickToFocus, FPGrabFocus
 #Style * TileCascadePlacement
 #Style * CascadePlacement
 Style *Chromium* MinOverlapPlacement, GrabFocusOff, !UsePPosition
+Style *Image* MinOverlapPlacement, GrabFocusOff, !UsePPosition
 
 ##### Exit panel 
 ## Center panel postion.
