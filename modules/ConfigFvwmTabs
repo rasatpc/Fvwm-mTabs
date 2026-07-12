@@ -1,11 +1,18 @@
 ## FVWMTABS_DIR is set by the FvwmTabs module from its actual ModulePath.
 ## Example: ModulePath ${HOME}/.fvwm/modules:+
+##
+## Commands reach the FvwmTabs server through FvwmMFL.:
+## each function runs `Echo FvwmTabsCmd <command>`. FVWM broadcasts that as an
+## MX_ECHO packet, FvwmMFL re-emits it as an "echo" event on its socket, and the
+## FvwmTabs server (subscribed to "echo") strips the FvwmTabsCmd tag and runs.
+##
+## Load FvwmMFL before FvwmTabs in StartFunction.
 
 ## Create new tabber
 
 DestroyFunc NewTabber
 AddToFunc NewTabber
-+ I Exec exec python3 "$[FVWMTABS_DIR]/tabber_client.py" createNewTabber $*
++ I Echo FvwmTabsCmd createNewTabber $*
 
 ## Legacy/default tabber commands.
 
@@ -15,7 +22,7 @@ AddToFunc Tabize
 
 DestroyFunc TabizeActive
 AddToFunc TabizeActive
-+ I Exec exec python3 "$[FVWMTABS_DIR]/tabber_client.py" tabizeActive
++ I Echo FvwmTabsCmd tabizeActive
 
 DestroyFunc TabizeTo
 AddToFunc TabizeTo
@@ -23,43 +30,56 @@ AddToFunc TabizeTo
 
 DestroyFunc DestroyTabber
 AddToFunc DestroyTabber
-+ I Exec exec python3 "$[FVWMTABS_DIR]/tabber_client.py" destroyTabber $[FVWMTABS_DEFAULT_ID]
++ I Echo FvwmTabsCmd destroyTabber $[FVWMTABS_DEFAULT_ID]
 
 DestroyFunc DestroyActiveTabber
 AddToFunc DestroyActiveTabber
-+ I Exec exec python3 "$[FVWMTABS_DIR]/tabber_client.py" destroyActiveTabber
++ I Echo FvwmTabsCmd destroyActiveTabber
 
 DestroyFunc DestroyTabberId
 AddToFunc DestroyTabberId
-+ I Exec exec python3 "$[FVWMTABS_DIR]/tabber_client.py" destroyTabber $0
++ I Echo FvwmTabsCmd destroyTabber $0
 
 DestroyFunc NextTab
 AddToFunc NextTab
-+ I Exec exec python3 "$[FVWMTABS_DIR]/tabber_client.py" nextTab $[FVWMTABS_DEFAULT_ID]
++ I Echo FvwmTabsCmd nextTab $[FVWMTABS_DEFAULT_ID]
 
 DestroyFunc NextTabActive
 AddToFunc NextTabActive
-+ I Exec exec python3 "$[FVWMTABS_DIR]/tabber_client.py" nextTabActive
++ I Echo FvwmTabsCmd nextTabActive
 
 DestroyFunc NextTabId
 AddToFunc NextTabId
-+ I Exec exec python3 "$[FVWMTABS_DIR]/tabber_client.py" nextTab $0
++ I Echo FvwmTabsCmd nextTab $0
 
 DestroyFunc PrevTab
 AddToFunc PrevTab
-+ I Exec exec python3 "$[FVWMTABS_DIR]/tabber_client.py" prevTab $[FVWMTABS_DEFAULT_ID]
++ I Echo FvwmTabsCmd prevTab $[FVWMTABS_DEFAULT_ID]
 
 DestroyFunc PrevTabActive
 AddToFunc PrevTabActive
-+ I Exec exec python3 "$[FVWMTABS_DIR]/tabber_client.py" prevTabActive
++ I Echo FvwmTabsCmd prevTabActive
 
 DestroyFunc PrevTabId
 AddToFunc PrevTabId
-+ I Exec exec python3 "$[FVWMTABS_DIR]/tabber_client.py" prevTab $0
++ I Echo FvwmTabsCmd prevTab $0
+
+## Change a tabber's numeric ID. "Renaming" here means reassigning the ID
+## number, not setting a free-text label. The request is refused (an error
+## dialog appears, nothing changes) if NEW_ID is already used by another
+## tabber, so two tabbers can never share an ID.
+
+DestroyFunc ChangeTabberId
+AddToFunc ChangeTabberId
++ I Echo FvwmTabsCmd changeTabberId $0 $1
+
+DestroyFunc ChangeActiveTabberId
+AddToFunc ChangeActiveTabberId
++ I Echo FvwmTabsCmd changeActiveTabberId $0
 
 DestroyFunc QuitFvwmTabs
 AddToFunc QuitFvwmTabs
-+ I Exec exec python3 "$[FVWMTABS_DIR]/tabber_client.py" quit
++ I Echo FvwmTabsCmd quit
 
 ## Root menu (right-click):
 

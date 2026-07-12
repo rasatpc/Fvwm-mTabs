@@ -1,4 +1,4 @@
-15 June 2026
+14 July 2026
 ################
 # HOW TO INSTALL Fvwm-mTab on FVWM3 (or Fvwm2)
 ################

@@ -2,12 +2,11 @@
 Fvwm-mTabs is a simplified version of KISe and myExt that uses FvwmTabs. It includes the tabbing module for FVWM that was in FVWM2. A Python/Tk rewrite of the old Perl FVWM tabbing module. This keeps the socket/Tk design, multiple tabbers, FVWM command functions, assigned tabber IDs, right-click menu, and autoSwallow behavior.
 
 # Converted from Perl-tk to Python 3 (Tkinter).
-# Check CHANGELOG.txt
 
 # Main features:
 * Desk Icons include:
 	Iconified Thumbnails, Full-Screen Maximize, Windows Overview,
-	Tiling and Tabs.
+	Tiling and Tabs with FvwmMFL socket.
 
 * Tab managers:
 	Store any number of windows, each in its own tab.
