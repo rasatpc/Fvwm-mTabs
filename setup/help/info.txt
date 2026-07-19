@@ -20,7 +20,7 @@ The default FVWM config file serves as the base. In Fvwm-mTabs, it is organized 
 
 The attached illustrated screenshot shows the key features of Fvwm-mTabs.
 
-.fvwm/setup/images/fvwm-mTabs-v0.9-help.png
+.fvwm/setup/images/fvwm-mTabs-v2.0.1-help.png
 
 MORE INFORMATION
 https://www.box-look.org
@@ -28,4 +28,4 @@ https://www.box-look.org
 Fvwm3-myExt extensions (configs) development started on 8 Dec 2020.
 Fvwm-KISe on 10 July 2023
 Fvwm-mTab
-Last update: 14 July 2026
+Last update: 19 July 2026

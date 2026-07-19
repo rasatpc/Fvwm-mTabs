@@ -12,9 +12,9 @@ Requirements:
 - Python 3
 - python3-tk
 - FVWM3
-- FvwmMFL (REQUIRED). It is the command transport between FVWM functions and the
-  FvwmTabs server, and also delivers autoSwallow window events. Load it before
-  FvwmTabs in StartFunction.
+- FvwmMFL (REQUIRED). It is the command transport between FVWM functions and
+  the FvwmTabs server, and also delivers autoSwallow window events. Load it
+  before FvwmTabs in StartFunction.
 - xdotool
 - x11-utils, which provides xprop and xwininfo
 
@@ -28,11 +28,11 @@ Install
    For example:
 
    mkdir -p ~/.fvwm/modules
-   cp ConfigFvwmTabs FvwmTabs FvwmTabs.conf ~/.fvwm/modules/
+   cp ConfigFvwmTabs FvwmTabs FvwmTabs.conf ~/.fvwm/FvwmTabs/
 
 2. Make the module executable:
 
-   chmod +x ~/.fvwm/FvwmTabs/FvwmTabs
+   chmod +x ~/.fvwm/modules/FvwmTabs
 
 3. Add the module directory to FVWM config, loading FvwmMFL first:
 
@@ -45,8 +45,6 @@ Install
    + I Module FvwmTabs
 
 FVWM starts the executable named FvwmTabs from ModulePath. During module startup, FvwmTabs reads ConfigFvwmTabs, launches its own Python/Tk server, connects to the FvwmMFL socket, and stays connected to FVWM until FVWM exits.
-
-Note: FvwmTabs does not start FvwmMFL for you - load "Module FvwmMFL" yourself, before "Module FvwmTabs", as shown above.
 
 #####
 Manual Startup
