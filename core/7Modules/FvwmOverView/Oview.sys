@@ -1,0 +1,41 @@
+## Modules: Oview.sys
+## Inspired by Gnome Activity overview and Taviso’s WindowList function – FvwmExpose
+## https://zensites.net/fvwm/guide/advanced_functions.html
+
+SetEnv HOME_DIR $[HOME]/.fvwm
+SetEnv CORE_DIR $[HOME]/.fvwm/core
+
+SetEnv wo-icon $[CORE_DIR]/7Modules/FvwmOverView/icons
+
+Module FvwmButtons FvwmOverView
+
+DestroyModuleConfig FvwmOverView: *
+*FvwmOverView: Geometry 77x36+10+50
+*FvwmOverView: PressColorset 32
+*FvwmOverView: Frame 0
+*FvwmOverView: Rows 1
+*FvwmOverView: Columns 1
+*FvwmOverView: Padding 0 0
+
+*FvwmOverView: (46x1, Colorset 62, Icon $[wo-icon]/appsView-38x38.png, Action(Mouse 1) 'Read $[CORE_DIR]/7Modules/FvwmOverView/OverView/WinListExpose.sys')
+
+## Style setting
+Style FvwmOverView !Borders, !Title, WindowListSkip, StaysOnTop, Sticky, NeverFocus
+
+## Key binding
+## Use FvwmCoomand as a short delay so X11 handles the window
+## capture properly. Add FvwmMFL.
+#
+
+Module FvwmMFL
+
+DestroyFunc FoverView
+AddToFunc FoverView
++ I Read $[CORE_DIR]/7Modules/FvwmOverView/OverView/WinListExpose.sys
+
+# (ctrl-w)
+Silent Key w A C PipeRead "FvwmCommand FoverView"
+
+## Top window focus.
+## This function is for "Style * ClickToFocus" users.
+## Check ....OverView/WinListExpose.sys

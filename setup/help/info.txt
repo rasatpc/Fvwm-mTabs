@@ -12,7 +12,7 @@ Iconify - iconifying all windows except one.
 Screen - maximizing windows filling whole screen.
 Tile - tiling windows places them in a grid.
 
-FVWM-mTabs (ver. 2.0.1)
+FVWM-mTabs (ver. 2.1.1)
 
 Fvwm-mTab is a streamlined version of KISe and myExt that began as a collection of pre-made configs. It offers a different approach to window management. The upgraded FvwmTabs provides a structured, efficient way to handle multiple documents or applications within a single container, significantly reducing desktop clutter and enhancing productivity. Similar to KISe's number of virtual workspaces (desks), but tabs are created within the same desk.
 
@@ -28,4 +28,4 @@ https://www.box-look.org
 Fvwm3-myExt extensions (configs) development started on 8 Dec 2020.
 Fvwm-KISe on 10 July 2023
 Fvwm-mTab
-Last update: 19 July 2026
+Last update: 3 September 2026

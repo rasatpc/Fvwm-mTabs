@@ -21,7 +21,7 @@ Id D, Action (Mouse 1) Nop)
 *PgNo: (85x1, Colorset 15, Title (Left) "Page: $[monitor.$[monitor.current].pagex]  \
 $[monitor.$[monitor.current].pagey]", Left, Id P, Action (Mouse 1) Nop)
 
-Style PgNo !Title, !Borders, WindowListSkip, StaysOnTop, Sticky
+Style PgNo !Title, !Borders, WindowListSkip, Sticky
 
 KillModule FvwmButtons PgNo
 Module FvwmButtons PgNo

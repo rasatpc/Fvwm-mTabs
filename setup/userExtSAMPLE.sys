@@ -29,7 +29,6 @@ Read $[USER_DIR]/TMenu/tMenu.conf
 ###########
 # 5. BINDINGS  (window list, move/resize, etc.)
 
-Read $[CORE_DIR]/5Bindings/ExposeList/fvwmExposeList.sys
 Read $[CORE_DIR]/5Bindings/MoRzBinding.sys
 Read $[CORE_DIR]/5Bindings/tBinding.sys
 
@@ -42,6 +41,7 @@ Read $[CORE_DIR]/6Decor/5BtmDecor/button5Dec.sys
 # 7. MODULES (control-panel, desk-icon, pager, etc.)
 
 Read $[CORE_DIR]/7Modules/ControlMinPanel/controlMP.sys
+Read $[CORE_DIR]/7Modules/FvwmOverView/Oview.sys
 Read $[CORE_DIR]/7Modules/RightTaskBar/rightTbar.sys
 Read $[CORE_DIR]/7Modules/vPager.sys
 
@@ -57,7 +57,7 @@ Read $[USER_DIR]/SimpleButton/simpleB.sys
 ## moves to the edge of the screen.
 
 EdgeScroll 0 0
-EdgeResistance 450
+EdgeResistance -1
 EdgeThickness 1
 Style * EdgeMoveDelay 500, EdgeMoveResistance 100
 
@@ -70,6 +70,8 @@ EwmhBaseStruts 90 170 70 70
 
 ##### Mouse
 ## Mouse click behaviour and window focus.
+## Note: If this is changed, check
+## core/7Modules/FvwmOverView/OverView/WinListExpose.sys
 
 Style * ClickToFocus, FPGrabFocus
 

@@ -37,7 +37,10 @@ Silent Key t A M Thumbnail
 ## Close alt-x
 Silent Key x A M Close
 
-Silent Key a A M AddTab
+## New tab  alt-a
+Silent Key a A M NewTabber
 
 ## FvwmTabs bindings
 # .fvwm/tab-module/FvwmTabs-DefaultSetup
+
+Silent Key Tab A M PipeRead 'echo skippy-xd'
