@@ -5,11 +5,11 @@ FVWM functions talk to FvwmTabs through the standard FvwmMFL module, and the Fvw
 
 # Main features:
 * Desk Icons include:
-	Iconified Thumbnails, Full-Screen Maximize, Windows Overview,
-	Tiling and Tabs with FvwmMFL socket.
+	Iconified Thumbnails, Full-Screen Maximize, Fvwm Overview (over
+	view of active windows), Tiling and Tabs with FvwmMFL socket.
 
 * Tab managers:
-	Store any number of windows, each in its own tab.
+	Store any number of windows, each in its own tab. 
 	AutoSwallow automatically moves applications to a specific tab
 	when they create windows. A powerful feature when combined
 	with AutoMoveWindows, which moves apps and tabs to a specific
@@ -29,7 +29,7 @@ Tested on Fvwm3 and Fvwm2
 
 Download:
 
-* Version 2.0.1
+* Version 2.1.1
 * https://github.com/rasatpc/Fvwm-mTabs/archive/refs/heads/main.zip
 
 Extract and copy subfolders to ~/.fvwm

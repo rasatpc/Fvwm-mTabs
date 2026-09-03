@@ -42,5 +42,3 @@ Silent Key a A M NewTabber
 
 ## FvwmTabs bindings
 # .fvwm/tab-module/FvwmTabs-DefaultSetup
-
-Silent Key Tab A M PipeRead 'echo skippy-xd'

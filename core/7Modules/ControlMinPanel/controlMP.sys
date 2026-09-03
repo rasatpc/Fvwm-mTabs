@@ -61,7 +61,7 @@ DestroyModuleConfig ExitBar: *
 *ExitBar: (1x1, Icon $[smallIcons]/logout.png, Action(Mouse 1) "Quit")
 *ExitBar: (1x1, Icon $[smallIcons]/suspend.png, Action(Mouse 1) "Exec sudo pm-suspend")
 *ExitBar: (1x1, Icon $[smallIcons]/restart.png, Action(Mouse 1) "Exec sudo reboot")
-*ExitBar: (1x1, Icon $[smallIcons]/quit.png, Action(Mouse 1) "Exec sudo halt")
+*ExitBar: (1x1, Icon $[smallIcons]/quit.png, Action(Mouse 1) "Exec sudo poweroff")
 
 Style ExitBar NoTitle, NoHandles, Sticky, WindowListSkip, \
 	BorderWidth 0, CirculateSkip, StaysOnTop, NeverFocus

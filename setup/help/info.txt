@@ -20,7 +20,7 @@ The default FVWM config file serves as the base. In Fvwm-mTabs, it is organized 
 
 The attached illustrated screenshot shows the key features of Fvwm-mTabs.
 
-.fvwm/setup/images/fvwm-mTabs-v2.0.1-help.png
+.fvwm/setup/images/fvwm-mTabs-v2.1.1-help.png
 
 MORE INFORMATION
 https://www.box-look.org
